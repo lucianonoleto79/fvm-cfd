@@ -1,9 +1,7 @@
 # fvm-cfd — Volumes Finitos para escoamentos viscosos incompressíveis
 
-[![testes](https://github.com/SEU-USUARIO/fvm-cfd/actions/workflows/testes.yml/badge.svg)](https://github.com/SEU-USUARIO/fvm-cfd/actions/workflows/testes.yml)
-[![Abrir no Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/SEU-USUARIO/fvm-cfd)
-
-> Troque `SEU-USUARIO/fvm-cfd` pelo seu usuário/repositório nos links acima e abaixo.
+[![testes](https://github.com/lucianonoleto79/fvm-cfd/actions/workflows/testes.yml/badge.svg)](https://github.com/lucianonoleto79/fvm-cfd/actions/workflows/testes.yml)
+[![Abrir no Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/lucianonoleto79/fvm-cfd)
 
 Solvers de volumes finitos (SIMPLEC, malha desencontrada, 2ª ordem) para Navier–Stokes
 incompressível em regime permanente, validados contra a literatura:
@@ -59,8 +57,11 @@ pytest
 ```
 
 **3. GitHub Pages — a versão JavaScript, interativa.**
-Ative uma vez em **Settings → Pages → Source: GitHub Actions**. A cada push que altere
-`web/`, a página é publicada em `https://SEU-USUARIO.github.io/fvm-cfd/`.
+Este repositório é privado: em conta gratuita do GitHub, o Pages só funciona em repositório
+público (ou com plano pago). Se ficar disponível, ative em
+**Settings → Pages → Source: GitHub Actions** e rode **Actions → pages → Run workflow**;
+a página sai em `https://lucianonoleto79.github.io/fvm-cfd/`. Enquanto isso, a versão web
+roda no Codespaces com `python -m http.server -d web 8000` (porta encaminhada automaticamente).
 
 ## Como rodar localmente
 

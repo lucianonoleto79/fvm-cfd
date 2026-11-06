@@ -1,11 +1,10 @@
 # Publica a versão JavaScript (pasta web/) no GitHub Pages.
 # Ative uma vez em Settings > Pages > Source: "GitHub Actions".
+# Só manual: em repositório privado com conta gratuita o Pages não está disponível,
+# e um disparo automático a cada push falharia.
 name: pages
 
 on:
-  push:
-    branches: [main]
-    paths: ["web/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
