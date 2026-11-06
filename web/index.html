@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cavidade FVM</title>
+<style>
+  :root {
+    --bg: #fbfaf8; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #e3e1dc;
+    --grid: #eeece8; --accent: #2f6fd6; --ref: #d9532b; --ok: #2e8a4e; --psi-neg: #2f6fd6; --psi-pos: #d9532b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161615; --panel: #1f1f1d; --ink: #ecebe7; --muted: #9c9a94; --line: #34332f;
+      --grid: #2a2926; --accent: #6ea0f0; --ref: #f08a62; --ok: #5cc27f; --psi-neg: #6ea0f0; --psi-pos: #f08a62;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161615; --panel: #1f1f1d; --ink: #ecebe7; --muted: #9c9a94; --line: #34332f;
+    --grid: #2a2926; --accent: #6ea0f0; --ref: #f08a62; --ok: #5cc27f; --psi-neg: #6ea0f0; --psi-pos: #f08a62;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 20px; color: var(--muted); }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; padding: 14px;
+              background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 4px; }
+  select, input, button { font: inherit; color: var(--ink); background: var(--bg);
+                          border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+  input { width: 90px; }
+  button { cursor: pointer; background: var(--accent); color: #fff; border-color: transparent; }
+  button.secondary { background: transparent; color: var(--ink); border-color: var(--line); }
+  #status { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-top: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .card h2 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
+  canvas { width: 100%; aspect-ratio: 1 / 0.85; display: block; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
+  th, td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 500; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .sw { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 4px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Cavidade com tampa deslizante — Volumes Finitos (SIMPLEC)</h1>
+  <p class="sub">Navier–Stokes incompressível 2D, malha desencontrada, correção diferida (2ª ordem).
+     Validação contra Ghia, Ghia &amp; Shin (1982), <i>J. Comput. Phys.</i> 48:387–411.</p>
+
+  <div class="controls">
+    <label>Reynolds
+      <select id="re"><option>100</option><option>400</option><option selected>1000</option></select></label>
+    <label>Células N×N
+      <select id="n"><option>32</option><option>64</option><option selected>128</option><option>256</option></select></label>
+    <label>Relaxação α <input id="au" type="number" step="0.05" value="0.8"></label>
+    <label>Tolerância <input id="tol" type="text" value="1e-6"></label>
+    <label>Iter. máx. <input id="maxit" type="number" value="20000"></label>
+    <button id="run">Rodar</button>
+    <button id="stop" class="secondary">Parar</button>
+    <span id="status">pronto</span>
+  </div>
+
+  <div class="grid">
+    <div class="card"><h2>u ao longo de x = 0,5</h2><canvas id="cu"></canvas>
+      <div class="legend"><span><span class="sw" style="background:var(--accent)"></span>FVM</span>
+        <span><span class="dot" style="background:var(--ref)"></span>Ghia et al. (1982)</span></div></div>
+    <div class="card"><h2>v ao longo de y = 0,5</h2><canvas id="cv"></canvas>
+      <div class="legend"><span><span class="sw" style="background:var(--accent)"></span>FVM</span>
+        <span><span class="dot" style="background:var(--ref)"></span>Ghia et al. (1982)</span></div></div>
+    <div class="card"><h2>Linhas de corrente (ψ, níveis de Ghia)</h2><canvas id="cs" style="aspect-ratio:1"></canvas></div>
+    <div class="card"><h2>Convergência (resíduos normalizados)</h2><canvas id="cr"></canvas>
+      <div class="legend"><span><span class="sw" style="background:var(--accent)"></span>u</span>
+        <span><span class="sw" style="background:var(--ok)"></span>v</span>
+        <span><span class="sw" style="background:var(--ref)"></span>massa</span></div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px"><h2>Comparação quantitativa</h2><div id="tbl">—</div></div>
+</main>
+
+<script src="fvm.js"></script>
+<script src="ghia.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+let solver = null, running = false;
+window.results = {}; // resultados por "Re/N", lidos externamente
+
+// ------------------------------------------------------------ gráficos (canvas)
+function setup(canvas) {
+  const dpr = window.devicePixelRatio || 1, r = canvas.getBoundingClientRect();
+  canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr);
+  const ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, W: r.width, H: r.height };
+}
+
+function plot(canvas, o) {
+  const { ctx, W, H } = setup(canvas);
+  const m = { l: 52, r: 12, t: 10, b: 38 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const [x0, x1] = o.xr, [y0, y1] = o.yr;
+  const tx = o.logy ? (v) => Math.log10(v) : (v) => v;
+  const X = (x) => m.l + (x - x0) / (x1 - x0) * pw;
+  const Y = (y) => m.t + (1 - (tx(y) - tx(y0)) / (tx(y1) - tx(y0))) * ph;
+  ctx.font = '11px system-ui, sans-serif'; ctx.fillStyle = css('--muted'); ctx.strokeStyle = css('--grid'); ctx.lineWidth = 1;
+  ctx.textAlign = 'center';
+  for (const t of o.xt) { ctx.beginPath(); ctx.moveTo(X(t), m.t); ctx.lineTo(X(t), m.t + ph); ctx.stroke(); ctx.fillText(o.fmtx ? o.fmtx(t) : t, X(t), m.t + ph + 14); }
+  ctx.textAlign = 'right';
+  for (const t of o.yt) { ctx.beginPath(); ctx.moveTo(m.l, Y(t)); ctx.lineTo(m.l + pw, Y(t)); ctx.stroke(); ctx.fillText(o.fmty ? o.fmty(t) : t, m.l - 6, Y(t) + 4); }
+  ctx.textAlign = 'center'; ctx.fillText(o.xl, m.l + pw / 2, H - 6);
+  ctx.save(); ctx.translate(12, m.t + ph / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(o.yl, 0, 0); ctx.restore();
+  ctx.save(); ctx.beginPath(); ctx.rect(m.l, m.t, pw, ph); ctx.clip();
+  for (const s of o.series) {
+    if (s.marker) {
+      ctx.fillStyle = s.color; ctx.strokeStyle = css('--panel'); ctx.lineWidth = 1.5;
+      for (let k = 0; k < s.x.length; k++) { ctx.beginPath(); ctx.arc(X(s.x[k]), Y(s.y[k]), 4, 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); }
+    } else {
+      ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.beginPath();
+      let started = false;
+      for (let k = 0; k < s.x.length; k++) {
+        if (o.logy && !(s.y[k] > 0)) continue;
+        const px = X(s.x[k]), py = Y(s.y[k]);
+        started ? ctx.lineTo(px, py) : ctx.moveTo(px, py); started = true;
+      }
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+// marching squares sobre psi nos vértices
+const PSI_LEVELS = [-0.1175, -0.115, -0.11, -0.1, -0.09, -0.07, -0.05, -0.03, -0.01, -1e-4, -1e-5, -1e-7, -1e-10,
+                    1e-8, 1e-7, 1e-6, 1e-5, 5e-5, 1e-4, 2.5e-4, 5e-4, 1e-3, 1.5e-3, 3e-3];
+function drawStream(canvas, sf, vortex) {
+  const { ctx, W, H } = setup(canvas);
+  const pad = 8, S = Math.min(W, H) - 2 * pad, ox = (W - S) / 2, oy = (H - S) / 2;
+  const { psi, ni, nj } = sf;
+  const X = (i) => ox + i / (ni - 1) * S, Y = (j) => oy + (1 - j / (nj - 1)) * S;
+  ctx.strokeStyle = css('--line'); ctx.lineWidth = 1; ctx.strokeRect(ox, oy, S, S);
+  ctx.fillStyle = css('--accent'); ctx.fillRect(ox, oy - 3, S, 3); // tampa
+  for (const lv of PSI_LEVELS) {
+    ctx.strokeStyle = lv < 0 ? css('--psi-neg') : css('--psi-pos'); ctx.lineWidth = 1; ctx.beginPath();
+    for (let j = 0; j < nj - 1; j++) for (let i = 0; i < ni - 1; i++) {
+      const c = [psi[j * ni + i], psi[j * ni + i + 1], psi[(j + 1) * ni + i + 1], psi[(j + 1) * ni + i]];
+      const P = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]], pts = [];
+      for (let e = 0; e < 4; e++) {
+        const a = c[e], b = c[(e + 1) % 4];
+        if ((a < lv) !== (b < lv)) {
+          const t = (lv - a) / (b - a), pa = P[e], pb = P[(e + 1) % 4];
+          pts.push([pa[0] + t * (pb[0] - pa[0]), pa[1] + t * (pb[1] - pa[1])]);
+        }
+      }
+      for (let q = 0; q + 1 < pts.length; q += 2) { ctx.moveTo(X(pts[q][0]), Y(pts[q][1])); ctx.lineTo(X(pts[q + 1][0]), Y(pts[q + 1][1])); }
+    }
+    ctx.stroke();
+  }
+  if (vortex) {
+    ctx.fillStyle = css('--ink'); ctx.beginPath();
+    ctx.arc(ox + vortex.x * S, oy + (1 - vortex.y) * S, 3, 0, 2 * Math.PI); ctx.fill();
+  }
+}
+
+// ------------------------------------------------------------ execução
+function render() {
+  if (!solver) return;
+  const Re = solver.Re, G = GHIA, uc = solver.uCenterline(), vc = solver.vCenterline();
+  const acc = css('--accent'), ref = css('--ref');
+  plot($('cu'), { xr: [-0.6, 1.05], yr: [0, 1], xt: [-0.5, -0.25, 0, 0.25, 0.5, 0.75, 1], yt: [0, 0.2, 0.4, 0.6, 0.8, 1],
+    xl: 'u', yl: 'y', series: [{ x: uc.u, y: uc.y, color: acc }, G.u[Re] && { x: G.u[Re], y: G.y, color: ref, marker: true }].filter(Boolean) });
+  plot($('cv'), { xr: [0, 1], yr: [-0.6, 0.45], xt: [0, 0.2, 0.4, 0.6, 0.8, 1], yt: [-0.6, -0.4, -0.2, 0, 0.2, 0.4],
+    xl: 'x', yl: 'v', series: [{ x: vc.x, y: vc.v, color: acc }, G.v[Re] && { x: G.x, y: G.v[Re], color: ref, marker: true }].filter(Boolean) });
+  const h = solver.history, its = h.map((e) => e.it);
+  const nIt = Math.max(10, solver.iter), step = Math.pow(10, Math.floor(Math.log10(nIt)));
+  const xt = []; for (let t = 0; t <= nIt; t += step * (nIt / step > 5 ? 2 : 1)) xt.push(t);
+  plot($('cr'), { xr: [0, nIt], yr: [1e-8, 10], xt, yt: [1e-8, 1e-6, 1e-4, 1e-2, 1], logy: true,
+    fmty: (t) => '1e' + Math.round(Math.log10(t)), xl: 'iteração SIMPLEC', yl: 'resíduo',
+    series: [{ x: its, y: h.map((e) => e.ru), color: acc }, { x: its, y: h.map((e) => e.rv), color: css('--ok') },
+             { x: its, y: h.map((e) => e.rm), color: ref }] });
+  drawStream($('cs'), solver.streamFunction(), solver.primaryVortex());
+}
+
+function compare() {
+  const Re = solver.Re, G = GHIA, I = FVM.interp;
+  if (!G.u[Re]) { $('tbl').textContent = 'Sem dados de referência para este Re.'; return null; }
+  const uc = solver.uCenterline(), vc = solver.vCenterline();
+  const eu = G.y.map((y, k) => I(uc.y, uc.u, y) - G.u[Re][k]);
+  const ev = G.x.map((x, k) => I(vc.x, vc.v, x) - G.v[Re][k]);
+  const rms = (a) => Math.sqrt(a.reduce((s, e) => s + e * e, 0) / a.length);
+  const mx = (a) => Math.max(...a.map(Math.abs));
+  const vx = solver.primaryVortex(), gv = G.vortex[Re];
+  const r = { Re, N: solver.nx, iter: solver.iter, converged: solver.converged,
+    uRMS: rms(eu), uMax: mx(eu), vRMS: rms(ev), vMax: mx(ev), vortex: vx, ghiaVortex: gv,
+    psiErrPct: 100 * (vx.psi - gv.psi) / Math.abs(gv.psi),
+    uTable: G.y.map((y, k) => [y, G.u[Re][k], I(uc.y, uc.u, y)]),
+    vTable: G.x.map((x, k) => [x, G.v[Re][k], I(vc.x, vc.v, x)]) };
+  window.results[Re + '/' + solver.nx] = r;
+  const f = (v, d = 4) => v.toFixed(d);
+  $('tbl').innerHTML = `
+    <table>
+      <tr><th>Grandeza</th><th>FVM (${solver.nx}×${solver.nx})</th><th>Ghia et al. (129×129)</th><th>Diferença</th></tr>
+      <tr><td>ψ<sub>min</sub> (vórtice primário)</td><td>${f(vx.psi, 6)}</td><td>${f(gv.psi, 6)}</td><td>${f(r.psiErrPct, 2)} %</td></tr>
+      <tr><td>x do centro</td><td>${f(vx.x)}</td><td>${f(gv.x)}</td><td>${f(vx.x - gv.x)}</td></tr>
+      <tr><td>y do centro</td><td>${f(vx.y)}</td><td>${f(gv.y)}</td><td>${f(vx.y - gv.y)}</td></tr>
+      <tr><td>u(x=0,5): erro RMS / máx</td><td colspan="2">17 pontos de Ghia</td><td>${f(r.uRMS)} / ${f(r.uMax)}</td></tr>
+      <tr><td>v(y=0,5): erro RMS / máx</td><td colspan="2">17 pontos de Ghia</td><td>${f(r.vRMS)} / ${f(r.vMax)}</td></tr>
+      <tr><td>Iterações SIMPLEC</td><td>${solver.iter}${solver.converged ? '' : ' (não convergiu)'}</td><td></td><td></td></tr>
+    </table>`;
+  return r;
+}
+
+function start() {
+  if (running) return;
+  solver = new FVM.CavitySolver({ Re: +$('re').value, N: +$('n').value, alphaU: +$('au').value, tol: +$('tol').value });
+  const maxIt = +$('maxit').value, t0 = performance.now();
+  let lastDraw = 0;
+  running = true;
+  (function loop() {
+    if (!running) { $('status').textContent += ' — interrompido'; compare(); return; }
+    const tf = performance.now() + 120; let h;
+    while (performance.now() < tf && !solver.converged && solver.iter < maxIt) h = solver.iterate();
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    if (h) $('status').textContent = `it ${solver.iter} · ru ${h.ru.toExponential(1)} · rv ${h.rv.toExponential(1)} · massa ${h.rm.toExponential(1)} · ${secs} s`;
+    if (performance.now() - lastDraw > 1000) { render(); lastDraw = performance.now(); }
+    if (solver.converged || solver.iter >= maxIt) {
+      running = false; render(); const r = compare(); if (r) r.seconds = +secs;
+      $('status').textContent += solver.converged ? ' — convergido' : ' — iter. máx.'; window.done = true; return;
+    }
+    setTimeout(loop, 0);
+  })();
+}
+
+$('run').onclick = () => { window.done = false; start(); };
+$('stop').onclick = () => { running = false; };
+window.addEventListener('resize', render);
+// Permite disparar via URL: index.html?Re=100&N=128&auto
+const q = new URLSearchParams(location.search);
+if (q.has('Re')) $('re').value = q.get('Re');
+if (q.has('N')) $('n').value = q.get('N');
+if (q.has('auto')) start();
+</script>
+</body>
+</html>

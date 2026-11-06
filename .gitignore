@@ -1,0 +1,18 @@
+# resultados gerados pelos scripts (figuras de referência ficam em docs/figures)
+results/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# editores / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# configuração local do Claude Code
+.claude/

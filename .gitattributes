@@ -1,0 +1,5 @@
+# finais de linha normalizados (LF no repositório); scripts PowerShell em CRLF
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.npz binary

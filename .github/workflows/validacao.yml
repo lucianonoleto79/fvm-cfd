@@ -1,0 +1,67 @@
+# Validação completa, disparada manualmente (aba Actions > validacao > Run workflow).
+# Figuras, campos (.npz) e métricas (.json) ficam disponíveis como artefato da execução.
+name: validacao
+
+on:
+  workflow_dispatch:
+    inputs:
+      caso:
+        description: "Caso a rodar"
+        type: choice
+        options: [todos, cavidade, tubo]
+        default: todos
+      cavidade_re:
+        description: "Cavidade: números de Reynolds"
+        default: "100 400 1000"
+      cavidade_n:
+        description: "Cavidade: células por lado"
+        default: "128"
+      tubo_n:
+        description: "Tubo: células no diâmetro (ímpares)"
+        default: "11 15 21 31"
+
+jobs:
+  cavidade:
+    if: inputs.caso != 'tubo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: mkdir -p results && python python/cavity.py --Re $CAV_RE --N $CAV_N | tee results/cavidade.log
+        shell: bash
+        env:
+          PYTHONUNBUFFERED: "1"
+          CAV_RE: ${{ inputs.cavidade_re }}
+          CAV_N: ${{ inputs.cavidade_n }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados-cavidade
+          path: results/
+
+  tubo:
+    if: inputs.caso != 'cavidade'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: mkdir -p results && python python/pipe.py --n $TUBO_N | tee results/tubo.log
+        shell: bash
+        env:
+          PYTHONUNBUFFERED: "1"
+          TUBO_N: ${{ inputs.tubo_n }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resultados-tubo
+          path: results/
