@@ -64,15 +64,35 @@ results/<caso>/
 results/estudo_<nome>/    estudos com vários casos (malha, domínio): resumo .json e figuras
 ```
 
-| Pasta | Caso |
-|---|---|
-| `cavidade_Re{100,400,1000}_N128` | cavidade, malha 128 × 128 |
-| `tubo_Re100_n{11,15,21}` | tubo 3D, 11/15/21 células no diâmetro |
-| `cilindro_O_Re100_NT{128,192,256}_R40` | cilindro, malha O, estudo de malha |
-| `cilindro_O_Re100_NT128_R{10,20,40,80}` | cilindro, malha O, estudo de domínio |
-| `cilindro_ret_Re100_{P,M,G}_h0.025` | cilindro, domínio retangular, estudo de domínio |
-| `cilindro_ret_Re100_M_h0.03333` | cilindro, retangular, sensibilidade à malha |
-| `estudo_cavidade_N128`, `estudo_malha_tubo_Re100`, `estudo_cilindro_O_Re100`, `estudo_cilindro_ret_Re100`, `estudo_dominio_cilindro_Re100` | resumos dos estudos |
+### Casos simulados
+
+Tabela mantida automaticamente: cada script, ao terminar (ou interromper) um caso em
+`results/`, regenera esta lista a partir de todas as pastas de caso
+(`python python/casefiles.py` faz o mesmo à mão). Os resumos dos estudos estão em
+`results/estudo_*`.
+
+<!-- casos:inicio (tabela gerada por python/casefiles.py; não edite à mão) -->
+_16 casos em `results/`, atualizado em 2026-11-06 18:17._
+
+| caso | tipo | malha | resultados principais | situação | tempo | data | figuras |
+|---|---|---|---|---|---:|---|---|
+| [`cavidade_Re1000_N128`](cavidade_Re1000_N128/) | Cavidade, Re = 1000 | 128 × 128 | ψ_min = −0,11727 (Ghia −0,11793, erro 0,56 %); 1570 iterações | convergiu | 4 min | — | [domínio](cavidade_Re1000_N128/01_dominio.png) · [malha](cavidade_Re1000_N128/02_malha.png) · [convergência](cavidade_Re1000_N128/03_convergencia.png) · [resultados](cavidade_Re1000_N128/04_resultados.png) |
+| [`cavidade_Re100_N128`](cavidade_Re100_N128/) | Cavidade, Re = 100 | 128 × 128 | ψ_min = −0,10337 (Ghia −0,10342, erro 0,05 %); 2048 iterações | convergiu | 6 min | — | [domínio](cavidade_Re100_N128/01_dominio.png) · [malha](cavidade_Re100_N128/02_malha.png) · [convergência](cavidade_Re100_N128/03_convergencia.png) · [resultados](cavidade_Re100_N128/04_resultados.png) |
+| [`cavidade_Re400_N128`](cavidade_Re400_N128/) | Cavidade, Re = 400 | 128 × 128 | ψ_min = −0,11343 (Ghia −0,11391, erro 0,42 %); 1583 iterações | convergiu | 4 min | — | [domínio](cavidade_Re400_N128/01_dominio.png) · [malha](cavidade_Re400_N128/02_malha.png) · [convergência](cavidade_Re400_N128/03_convergencia.png) · [resultados](cavidade_Re400_N128/04_resultados.png) |
+| [`cilindro_O_Re100_NT128_R10`](cilindro_O_Re100_NT128_R10/) | Cilindro, malha O, Re = 100, R_ext = 10 D | 88 × 128 (11.264 volumes) | Cd = 1,3744, Cl = ±0,3450, St = 0,1660 (12 ciclos) | concluído | 3 min | — | [domínio](cilindro_O_Re100_NT128_R10/01_dominio.png) · [malha](cilindro_O_Re100_NT128_R10/02_malha.png) · [convergência](cilindro_O_Re100_NT128_R10/03_convergencia.png) · [resultados](cilindro_O_Re100_NT128_R10/04_resultados.png) |
+| [`cilindro_O_Re100_NT128_R20`](cilindro_O_Re100_NT128_R20/) | Cilindro, malha O, Re = 100, R_ext = 20 D | 108 × 128 (13.824 volumes) | Cd = 1,3506, Cl = ±0,3269, St = 0,1646 (11 ciclos) | concluído | 4 min | — | [domínio](cilindro_O_Re100_NT128_R20/01_dominio.png) · [malha](cilindro_O_Re100_NT128_R20/02_malha.png) · [convergência](cilindro_O_Re100_NT128_R20/03_convergencia.png) · [resultados](cilindro_O_Re100_NT128_R20/04_resultados.png) |
+| [`cilindro_O_Re100_NT128_R40`](cilindro_O_Re100_NT128_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 128 × 128 (16.384 volumes) | Cd = 1,3385, Cl = ±0,3226, St = 0,1637 (11 ciclos) | concluído | 6 min | — | [domínio](cilindro_O_Re100_NT128_R40/01_dominio.png) · [malha](cilindro_O_Re100_NT128_R40/02_malha.png) · [convergência](cilindro_O_Re100_NT128_R40/03_convergencia.png) · [resultados](cilindro_O_Re100_NT128_R40/04_resultados.png) |
+| [`cilindro_O_Re100_NT128_R80`](cilindro_O_Re100_NT128_R80/) | Cilindro, malha O, Re = 100, R_ext = 80 D | 148 × 128 (18.944 volumes) | Cd = 1,3345, Cl = ±0,3206, St = 0,1634 (11 ciclos) | concluído | 5 min | — | [domínio](cilindro_O_Re100_NT128_R80/01_dominio.png) · [malha](cilindro_O_Re100_NT128_R80/02_malha.png) · [convergência](cilindro_O_Re100_NT128_R80/03_convergencia.png) · [resultados](cilindro_O_Re100_NT128_R80/04_resultados.png) |
+| [`cilindro_O_Re100_NT192_R40`](cilindro_O_Re100_NT192_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 192 × 192 (36.864 volumes) | Cd = 1,3353, Cl = ±0,3234, St = 0,1641 (11 ciclos) | concluído | 24 min | — | [domínio](cilindro_O_Re100_NT192_R40/01_dominio.png) · [malha](cilindro_O_Re100_NT192_R40/02_malha.png) · [convergência](cilindro_O_Re100_NT192_R40/03_convergencia.png) · [resultados](cilindro_O_Re100_NT192_R40/04_resultados.png) |
+| [`cilindro_O_Re100_NT256_R40`](cilindro_O_Re100_NT256_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 256 × 256 (65.536 volumes) | Cd = 1,3336, Cl = ±0,3234, St = 0,1643 (11 ciclos) | concluído | 63 min | — | [domínio](cilindro_O_Re100_NT256_R40/01_dominio.png) · [malha](cilindro_O_Re100_NT256_R40/02_malha.png) · [convergência](cilindro_O_Re100_NT256_R40/03_convergencia.png) · [resultados](cilindro_O_Re100_NT256_R40/04_resultados.png) |
+| [`cilindro_ret_Re100_G_h0.025`](cilindro_ret_Re100_G_h0.025/) | Cilindro, retangular G, Re = 100, [−40, 80] × [±40] D | 447 × 308, h = D/40 (137.676 volumes) | Cd = 1,3009, Cl = ±0,3106, St = 0,1657 (12 ciclos) | concluído | 76 min | — | [domínio](cilindro_ret_Re100_G_h0.025/01_dominio.png) · [malha](cilindro_ret_Re100_G_h0.025/02_malha.png) · [convergência](cilindro_ret_Re100_G_h0.025/03_convergencia.png) · [resultados](cilindro_ret_Re100_G_h0.025/04_resultados.png) |
+| [`cilindro_ret_Re100_M_h0.025`](cilindro_ret_Re100_M_h0.025/) | Cilindro, retangular M, Re = 100, [−20, 40] × [±20] D | 387 × 268, h = D/40 (103.716 volumes) | Cd = 1,3168, Cl = ±0,3167, St = 0,1671 (12 ciclos) | concluído | 55 min | — | [domínio](cilindro_ret_Re100_M_h0.025/01_dominio.png) · [malha](cilindro_ret_Re100_M_h0.025/02_malha.png) · [convergência](cilindro_ret_Re100_M_h0.025/03_convergencia.png) · [resultados](cilindro_ret_Re100_M_h0.025/04_resultados.png) |
+| [`cilindro_ret_Re100_M_h0.03333`](cilindro_ret_Re100_M_h0.03333/) | Cilindro, retangular M, Re = 100, [−20, 40] × [±20] D | 341 × 226, h = D/30 (77.066 volumes) | Cd = 1,2863, Cl = ±0,3020, St = 0,1679 (12 ciclos) | concluído | 29 min | — | [domínio](cilindro_ret_Re100_M_h0.03333/01_dominio.png) · [malha](cilindro_ret_Re100_M_h0.03333/02_malha.png) · [convergência](cilindro_ret_Re100_M_h0.03333/03_convergencia.png) · [resultados](cilindro_ret_Re100_M_h0.03333/04_resultados.png) |
+| [`cilindro_ret_Re100_P_h0.025`](cilindro_ret_Re100_P_h0.025/) | Cilindro, retangular P, Re = 100, [−10, 20] × [±10] D | 347 × 236, h = D/40 (81.892 volumes) | Cd = 1,3536, Cl = ±0,3257, St = 0,1706 (12 ciclos) | concluído | 41 min | — | [domínio](cilindro_ret_Re100_P_h0.025/01_dominio.png) · [malha](cilindro_ret_Re100_P_h0.025/02_malha.png) · [convergência](cilindro_ret_Re100_P_h0.025/03_convergencia.png) · [resultados](cilindro_ret_Re100_P_h0.025/04_resultados.png) |
+| [`tubo_Re100_n11`](tubo_Re100_n11/) | Tubo 3D, Re = 100 | 11 células no D (33.800 volumes) | f·Re = 63,16 (erro −1,32 %); L/D = 6,15 (Durst 5,77) | convergiu | 11 s | — | [domínio](tubo_Re100_n11/01_dominio.png) · [malha](tubo_Re100_n11/02_malha.png) · [convergência](tubo_Re100_n11/03_convergencia.png) · [resultados](tubo_Re100_n11/04_resultados.png) |
+| [`tubo_Re100_n15`](tubo_Re100_n15/) | Tubo 3D, Re = 100 | 15 células no D (57.800 volumes) | f·Re = 63,52 (erro −0,74 %); L/D = 5,97 (Durst 5,77) | convergiu | 25 s | — | [domínio](tubo_Re100_n15/01_dominio.png) · [malha](tubo_Re100_n15/02_malha.png) · [convergência](tubo_Re100_n15/03_convergencia.png) · [resultados](tubo_Re100_n15/04_resultados.png) |
+| [`tubo_Re100_n21`](tubo_Re100_n21/) | Tubo 3D, Re = 100 | 21 células no D (105.800 volumes) | f·Re = 63,80 (erro −0,32 %); L/D = 5,88 (Durst 5,77) | convergiu | 1 min | — | [domínio](tubo_Re100_n21/01_dominio.png) · [malha](tubo_Re100_n21/02_malha.png) · [convergência](tubo_Re100_n21/03_convergencia.png) · [resultados](tubo_Re100_n21/04_resultados.png) |
+<!-- casos:fim -->
 
 As figuras, métricas e logs de `results/` são versionados no git; os campos (`.npz`, ~70 MB)
 não — regenere-os rodando os scripts.
