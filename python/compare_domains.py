@@ -45,6 +45,7 @@ def main():
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
+    import matplotlib.ticker
     fig, axs = plt.subplots(1, 3, figsize=(15, 4.6))
     for k, (key, name) in enumerate((('Cd_mean', '$\\overline{C_d}$'), ('Cl_amp', 'amplitude de $C_l$'),
                                      ('St', 'St'))):
@@ -59,6 +60,7 @@ def main():
         a.set_xscale('log'); a.set_xlabel('distância do cilindro ao contorno lateral (R_ext ou H) / D')
         a.set_title(name); a.grid(alpha=0.3, which='both')
         a.set_xticks([10, 20, 40, 80]); a.set_xticklabels(['10', '20', '40', '80'])
+        a.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     axs[0].legend(fontsize=8)
     fig.suptitle('Cilindro, Re = 100 — efeito do tamanho do domínio', fontsize=12)
     fig.tight_layout()
