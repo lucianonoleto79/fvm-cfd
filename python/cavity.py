@@ -36,6 +36,7 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
 import ghia
+from monitor import ConvergenceMonitor, add_monitor_args, monitor_from_args
 
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / 'results'
 
@@ -186,14 +187,18 @@ class CavitySolver:
             self.converged = True
         return ru, rv, rm
 
-    def run(self, max_iter=20000, report=100):
+    def run(self, max_iter=20000, report=100, monitor=None):
+        """Itera até convergir. `monitor` (ConvergenceMonitor) imprime os resíduos e
+        desenha a curva de convergência; sem ele, só a tabela a cada `report` iterações."""
+        if monitor is None:
+            monitor = ConvergenceMonitor(['u', 'v', 'massa'], tol=self.tol, report=report)
         t0 = time.perf_counter()
+        monitor.start(self)
         while not self.converged and self.iter < max_iter:
-            ru, rv, rm = self.iterate()
-            if report and (self.iter % report == 0 or self.converged):
-                print(f'  it {self.iter:5d}  ru {ru:.2e}  rv {rv:.2e}  massa {rm:.2e}  '
-                      f'{time.perf_counter() - t0:6.1f} s', flush=True)
+            self.iterate()
+            monitor.update(self)
         self.seconds = time.perf_counter() - t0
+        monitor.finish(self)
         return self.converged
 
     # ---------------------------------------------------- pós-processamento
@@ -295,6 +300,7 @@ def main():
     ap.add_argument('--tol', type=float, default=1e-6)
     ap.add_argument('--max-iter', type=int, default=20000)
     ap.add_argument('--replot', action='store_true', help='só refaz as figuras a partir dos .npz salvos')
+    add_monitor_args(ap, report=100)
     ap.add_argument('--out', default=str(DEFAULT_OUT), help='pasta de saída (padrão: results/ na raiz do repositório)')
     args = ap.parse_args()
     OUT = Path(args.out)
@@ -312,7 +318,10 @@ def main():
     for Re in args.Re:
         print(f'\n=== Re = {Re}, malha {args.N}x{args.N} ===', flush=True)
         s = CavitySolver(Re=Re, N=args.N, alpha_u=args.alpha, tol=args.tol)
-        s.run(max_iter=args.max_iter)
+        mon = monitor_from_args(args, ['u', 'v', 'massa'], args.tol,
+                                OUT / f'convergencia_cavidade_Re{Re}_N{args.N}.png',
+                                f'Cavidade Re = {Re}, {args.N}x{args.N}')
+        s.run(max_iter=args.max_iter, monitor=mon)
         r = s.compare_ghia()
         results.append(r)
         plot_case(s, OUT / f'cavidade_Re{Re}_N{args.N}.png')

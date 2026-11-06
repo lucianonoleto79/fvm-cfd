@@ -22,6 +22,7 @@ from pathlib import Path
 import numpy as np
 
 from fvm3d import Grid3D, SIMPLEC3D
+from monitor import add_monitor_args, monitor_from_args
 
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / 'results'
 
@@ -181,6 +182,7 @@ def main():
     ap.add_argument('--tol', type=float, default=1e-6)
     ap.add_argument('--max-iter', type=int, default=3000)
     ap.add_argument('--reanalyze', action='store_true', help='refaz análise/figuras a partir dos .npz')
+    add_monitor_args(ap, report=50)
     ap.add_argument('--out', default=str(DEFAULT_OUT), help='pasta de saída (padrão: results/ na raiz do repositório)')
     args = ap.parse_args()
     OUT = Path(args.out)
@@ -200,7 +202,10 @@ def main():
             s.converged, s.seconds = old[n]['converged'], old[n]['seconds']
         else:
             print(f'\n=== Tubo: Re = {args.Re:g}, {n} células no diâmetro, L = {args.L:g} D ===', flush=True)
-            s.run(max_iter=args.max_iter)
+            mon = monitor_from_args(args, ['u', 'v', 'w', 'massa'], args.tol,
+                                    OUT / f'convergencia_tubo_Re{args.Re:g}_n{n}.png',
+                                    f'Tubo Re = {args.Re:g}, {n} células no diâmetro')
+            s.run(max_iter=args.max_iter, monitor=mon)
         res, aux = analyze(s, args.Re, args.L)
         study.append(res)
         last = (s, res, aux)

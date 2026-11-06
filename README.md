@@ -23,6 +23,7 @@ fvm-cfd/
 │   ├── cavity.py        solver 2D (cavidade) + validação contra Ghia et al.
 │   ├── ghia.py          dados de referência de Ghia et al. (1982)
 │   ├── fvm3d.py         solver 3D geral (SIMPLEC, fronteira imersa, BiCGSTAB + CG/AMG)
+│   ├── monitor.py       resíduos no terminal + curva de convergência durante a simulação
 │   └── pipe.py          validação 3D: tubo circular
 ├── web/                 versão JavaScript (roda no navegador / GitHub Pages)
 │   ├── index.html  fvm.js  ghia.js
@@ -57,11 +58,10 @@ pytest
 ```
 
 **3. GitHub Pages — a versão JavaScript, interativa.**
-Este repositório é privado: em conta gratuita do GitHub, o Pages só funciona em repositório
-público (ou com plano pago). Se ficar disponível, ative em
-**Settings → Pages → Source: GitHub Actions** e rode **Actions → pages → Run workflow**;
-a página sai em `https://lucianonoleto79.github.io/fvm-cfd/`. Enquanto isso, a versão web
-roda no Codespaces com `python -m http.server -d web 8000` (porta encaminhada automaticamente).
+Ative uma vez em **Settings → Pages → Source: GitHub Actions** e rode
+**Actions → pages → Run workflow**; a página sai em `https://lucianonoleto79.github.io/fvm-cfd/`.
+(Em conta gratuita o Pages só funciona com o repositório público.) A versão web também roda
+no Codespaces com `python -m http.server -d web 8000` (porta encaminhada automaticamente).
 
 ## Como rodar localmente
 
@@ -73,6 +73,30 @@ python python/cavity.py --Re 1000 --N 64   # um caso, outra malha
 python python/pipe.py --n 11 15 21 31      # tubo: estudo de malha
 python python/pipe.py --n 31 --reanalyze   # refaz análise/figura a partir dos .npz
 ```
+
+### Monitor de convergência
+
+Durante a simulação os resíduos (L1 normalizados de u, v, [w] e de massa) são impressos no
+terminal e a curva de convergência é regravada em `results/convergencia_*.png` a cada poucos
+segundos — dá para deixá-la aberta num visualizador de imagens enquanto o cálculo roda:
+
+```
+    iter          u          v      massa   max/tol    it/s    tempo   (tol = 1e-06)
+  ------------------------------------------------------------------
+     200  1.554e-06  1.822e-06  1.159e-06  1.82e+00   117.7     1.7s
+     215  8.280e-07  9.710e-07  6.177e-07  9.71e-01   120.3     1.8s
+  -> convergiu em 215 iterações, 1.8 s
+```
+
+| Opção | Efeito |
+|---|---|
+| `--report N` | imprime os resíduos a cada N iterações (0 desliga; padrão 100 na cavidade, 50 no tubo) |
+| `--refresh S` | atualiza a curva a cada S segundos (padrão 5) |
+| `--live` | abre uma janela do matplotlib que se atualiza (precisa de tela; sem tela, avisa e usa só o arquivo) |
+| `--no-curve` | não grava a curva durante a simulação |
+
+Em código: `s.run(monitor=ConvergenceMonitor(['u', 'v', 'massa'], tol=1e-6, plot_file='conv.png'))`
+(`from monitor import ConvergenceMonitor`).
 
 Versão web: `python -m http.server -d web 8000` e abra `http://localhost:8000/`
 (ou `?Re=1000&N=128&auto` para disparar direto). No Windows sem Python:

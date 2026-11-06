@@ -38,6 +38,8 @@ import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
+from monitor import ConvergenceMonitor
+
 try:
     import pyamg
 except ImportError:  # pragma: no cover
@@ -314,12 +316,16 @@ class SIMPLEC3D:
             self.converged = True
         return (*r, rm)
 
-    def run(self, max_iter=5000, report=50):
+    def run(self, max_iter=5000, report=50, monitor=None):
+        """Itera até convergir. `monitor` (ConvergenceMonitor) imprime os resíduos e
+        desenha a curva de convergência; sem ele, só a tabela a cada `report` iterações."""
+        if monitor is None:
+            monitor = ConvergenceMonitor(['u', 'v', 'w', 'massa'], tol=self.tol, report=report)
         t0 = time.perf_counter()
+        monitor.start(self)
         while not self.converged and self.iter < max_iter:
-            ru, rv, rw, rm = self.iterate()
-            if report and (self.iter % report == 0 or self.converged):
-                print(f'  it {self.iter:5d}  ru {ru:.2e}  rv {rv:.2e}  rw {rw:.2e}  massa {rm:.2e}  '
-                      f'{time.perf_counter() - t0:7.1f} s', flush=True)
+            self.iterate()
+            monitor.update(self)
         self.seconds = time.perf_counter() - t0
+        monitor.finish(self)
         return self.converged
