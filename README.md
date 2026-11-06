@@ -29,6 +29,9 @@ fvm-cfd/
 │   ├── control.py       pausar / salvar parciais / interromper, checkpoints e --resume
 │   ├── polar.py         malha O + solver transiente em coordenadas polares
 │   ├── cylinder.py      caso do cilindro (Re = 100): malha, forças, Strouhal
+│   ├── cartesian.py     malha cartesiana esticada + fronteira imersa (domínio retangular)
+│   ├── cylinder_rect.py cilindro em domínio retangular (tamanhos P, M, G)
+│   ├── compare_domains.py  efeito do tamanho do domínio: malha O x retangular
 │   └── pipe.py          validação 3D: tubo circular
 ├── web/                 versão JavaScript (roda no navegador / GitHub Pages)
 │   ├── index.html  fvm.js  ghia.js
@@ -293,9 +296,61 @@ Emissão de vórtices (malha 128 × 128, 3 períodos a partir de t = 150;
   <img src="docs/figures/cilindro_Re100_vortices.gif" width="800" alt="Animação da emissão de vórtices">
 </p>
 
+## Efeito do tamanho do domínio — malha O × domínio retangular
+
+Mesmo caso (Re = 100, mesmo esquema temporal), duas abordagens:
+
+* **Malha O** (`cylinder.py`): ajustada ao corpo, 128 × NR, contorno circular de raio R_ext;
+  entrada com o escoamento potencial em R_ext, saída convectiva.
+* **Domínio retangular** (`cylinder_rect.py`, `cartesian.py`): malha cartesiana esticada com
+  núcleo uniforme h = D/40, refino da esteira até 12 D; cilindro por **fronteira imersa**
+  (ghost-cell); entrada u = U uniforme, laterais com deslizamento livre, saída convectiva;
+  forças por balanço de quantidade de movimento num volume de controle. A malha perto do
+  cilindro é idêntica em todos os tamanhos de domínio.
+
+<p align="center">
+  <img src="docs/figures/cilindro_malha_retangular_M.png" width="950" alt="Malha cartesiana esticada">
+</p>
+
+| caso | volumes | Cd médio | amp. Cl | St |
+|---|---:|---:|---:|---:|
+| O, R_ext = 10 D | 11 264 | 1,3744 | 0,3450 | 0,1660 |
+| O, R_ext = 20 D | 13 824 | 1,3506 | 0,3269 | 0,1646 |
+| O, R_ext = 40 D | 16 384 | 1,3385 | 0,3226 | 0,1637 |
+| O, R_ext = 80 D | 18 944 | 1,3345 | 0,3206 | 0,1634 |
+| ret. P: [−10, 20] × [±10] D (bloqueio 5 %) | 81 892 | 1,3536 | 0,3257 | 0,1706 |
+| ret. M: [−20, 40] × [±20] D (2,5 %) | 103 716 | 1,3168 | 0,3167 | 0,1671 |
+| ret. G: [−40, 80] × [±40] D (1,25 %) | 137 676 | 1,3009 | 0,3106 | 0,1657 |
+| ret. M com h = D/30 (sensibilidade à malha) | 77 066 | 1,2863 | 0,3020 | 0,1679 |
+
+<p align="center">
+  <img src="docs/figures/comparacao_dominios.png" width="950" alt="Efeito do tamanho do domínio">
+</p>
+
+* Domínio pequeno superestima Cd, Cl e St nas duas abordagens (contorno a 10 D: Cd 3–4 %
+  acima do maior domínio).
+* A malha O é bem menos sensível: de 40 para 80 D, Cd muda 0,3 % e St 0,2 %. Provável
+  razão: a condição de entrada já é o escoamento potencial em torno do cilindro, enquanto o
+  retangular impõe velocidade uniforme e confina o escoamento entre paredes laterais.
+* No retangular, Cd varia aproximadamente na proporção do bloqueio D/2H (P→M: −0,037;
+  M→G: −0,016), comportamento típico de correção de bloqueio.
+* No maior domínio as abordagens ainda diferem (Cd −2,5 %, Cl −3 %, St +1,4 % no
+  retangular). Não é efeito de domínio: refinar o núcleo do retangular de D/30 para D/40
+  sobe Cd em 2,4 % e Cl em 4,9 % e baixa St em 0,5 %, sempre na direção da malha O. A
+  fronteira imersa (ordem ~1,4–1,8 no teste de Taylor–Couette) ainda não está convergida em
+  h = D/40; seria preciso h = D/60–D/80 (cerca de 2,5–6 h por caso neste código).
+* Custo: o retangular usa 5–7× mais volumes que a malha O, mas resolve a esteira com
+  nitidez até ~12 D (figura abaixo); a malha O é mais precisa e barata para as forças.
+
+<p align="center">
+  <img src="docs/figures/cilindro_ret_G.png" width="900" alt="Cilindro em domínio retangular">
+</p>
+
 ## Limitações
 
 * SIMPLEC (cavidade, tubo): regime permanente, propriedades constantes, malha uniforme.
+* Domínio retangular: fronteira imersa ainda não convergida em h = D/40 (Cd ~2–4 % abaixo
+  da malha O); estudo de refinamento só com dois níveis (D/30, D/40).
 * Cilindro: malha O específica para corpo circular; a malha engrossa longe do corpo, o que
   difunde os vórtices da esteira (x > 10 D) sem afetar as forças no cilindro.
 * No 3D, saída apenas na face z+; validado só no tubo circular.
