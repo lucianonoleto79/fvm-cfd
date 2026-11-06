@@ -13,7 +13,8 @@ vorticidade, métricas (Cd médio, amplitudes, Strouhal) comparadas com a litera
 Uso:
     python cylinder.py                       # NT = 128 e 192, T = 150
     python cylinder.py --NT 256 --T 150      # uma malha
-    python cylinder.py --mesh-only           # só gera e mostra a malha
+    python cylinder.py --mesh-only           # só gera a malha e o esquema dos contornos
+    python cylinder.py --NT 128 --resume --animate 3   # GIF da emissão de vórtices
 """
 import argparse
 import json
@@ -157,6 +158,90 @@ def plot_case(s, res, fname):
     plt.close(fig)
 
 
+def plot_boundary_conditions(g, fname):
+    """Esquema do domínio com as condições de contorno (fora de escala)."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Arc, Circle, FancyArrowPatch
+    fig, ax = plt.subplots(figsize=(11, 8.2))
+    Ro, Rc = 1.0, 0.16
+    ax.add_patch(Arc((0, 0), 2 * Ro, 2 * Ro, theta1=90, theta2=270, color='#1f6fb4', lw=5))
+    ax.add_patch(Arc((0, 0), 2 * Ro, 2 * Ro, theta1=-90, theta2=90, color='#c0392b', lw=5))
+    ax.add_patch(Circle((0, 0), Rc, color='0.2', zorder=3))
+    ax.plot([Rc, Ro], [0, 0], ls='--', color='0.5', lw=1)                 # costura theta = 0
+    for y in np.linspace(-0.6, 0.6, 5):                                    # escoamento livre
+        ax.add_patch(FancyArrowPatch((-1.55, y), (-1.15, y), arrowstyle='-|>', mutation_scale=14,
+                                     color='#1f6fb4'))
+    ax.text(-1.62, 0.78, 'U∞', color='#1f6fb4', fontsize=13)
+    # esteira esquemática
+    for k, x in enumerate(np.linspace(0.32, 0.9, 5)):
+        ax.add_patch(Circle((x, 0.07 * (-1) ** k), 0.045, fill=False, color='0.55', lw=1.2))
+    kw = dict(fontsize=10, va='center')
+    ax.text(-1.05, 1.25, 'ENTRADA  (metade de montante, cos θ < 0)\n'
+            'Dirichlet: u_r = U∞ (1 − R²/R_ext²) cos θ,  u_θ = −U∞ (1 + R²/R_ext²) sen θ\n'
+            '(escoamento potencial em R_ext ≈ escoamento livre U∞ em +x)',
+            color='#1f6fb4', ha='left', **kw)
+    ax.text(0.35, -1.13, 'SAÍDA  (metade de jusante, cos θ > 0)\n'
+            'convectiva: ∂u/∂t + U∞ ∂u/∂r = 0  (u_r e u_θ)\n'
+            'deixa os vórtices saírem sem reflexão; vazão corrigida\n'
+            'para que entre e saia a mesma massa',
+            color='#c0392b', ha='left', **kw)
+    ax.annotate('PAREDE DO CILINDRO (r = D/2)\nnão deslizamento: u_r = 0, u_θ = 0\n'
+                '(só para t < 2: u_θ = 0,5 sen(πt/2),\nrotação breve que dispara a emissão)',
+                xy=(-0.11, 0.12), xytext=(-0.62, 0.36), fontsize=9,
+                arrowprops=dict(arrowstyle='->', color='0.2'))
+    ax.annotate('θ = 0 ≡ 2π: periodicidade\n(costura da malha, não é contorno)',
+                xy=(0.62, 0.0), xytext=(-0.02, -0.40), fontsize=9, color='0.35',
+                arrowprops=dict(arrowstyle='->', color='0.5'))
+    ax.text(-1.6, -1.05, 'Pressão (correção φ da projeção): ∂φ/∂n = 0 em todos os contornos;\n'
+            'p só é definida a menos de uma constante.\n'
+            f'Fora de escala: R_ext = {g.Rout / (2 * g.R0):g} D.', fontsize=9, color='0.25', va='top')
+    ax.set_xlim(-1.7, 1.95); ax.set_ylim(-1.45, 1.5); ax.set_aspect('equal'); ax.axis('off')
+    ax.set_title('Condições de contorno — cilindro, malha O', fontsize=13)
+    fig.savefig(fname, dpi=110, bbox_inches='tight')
+    plt.close(fig)
+
+
+def animate(s, fname, periods=3.0, frames_per_period=24, St=0.164, xlim=(-2, 16), ylim=(-4, 4)):
+    """Continua a simulação por alguns períodos e grava a vorticidade num GIF."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.animation import PillowWriter
+    from matplotlib.patches import Circle
+    g = s.g
+    T = 1 / St
+    every = max(1, int(round(T / frames_per_period / s.dt)))
+    nfr = int(round(periods * frames_per_period))
+    th = np.r_[g.thf, 2 * np.pi]
+    R, TH = np.meshgrid(g.rf[1:-1], th, indexing='ij')
+    X, Y = R * np.cos(TH), R * np.sin(TH)
+    keep = R[:, 0] < np.hypot(max(abs(xlim[0]), xlim[1]), max(abs(ylim[0]), ylim[1])) * 1.05
+    X, Y = X[keep], Y[keep]
+    lv = np.linspace(-3, 3, 25)
+    fig, ax = plt.subplots(figsize=(10, 4.6))
+    writer = PillowWriter(fps=12)
+    with writer.saving(fig, str(fname), dpi=90):
+        for k in range(nfr):
+            ax.clear()
+            w = s.vorticity()
+            w = np.c_[w, w[:, :1]][keep]
+            ax.contourf(X, Y, np.clip(w, -3, 3), levels=lv, cmap='RdBu_r', extend='both')
+            ax.add_patch(Circle((0, 0), g.R0, color='0.3', zorder=3))
+            ax.set_xlim(*xlim); ax.set_ylim(*ylim); ax.set_aspect('equal')
+            cd, cl = s.history[-1][1:]
+            ax.set_title(f'Emissão de vórtices, Re = {s.Re:g} — vorticidade ω D/U, '
+                         f't = {s.t:6.2f}   Cd = {cd:.3f}  Cl = {cl:+.3f}', fontsize=10)
+            ax.set_xlabel('x / D'); ax.set_ylabel('y / D')
+            fig.tight_layout()
+            writer.grab_frame()
+            for _ in range(every):
+                s.iterate()
+    plt.close(fig)
+    return nfr
+
+
 # ----------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser(description='Cilindro 2D (malha O, transiente) — FVM')
@@ -168,7 +253,9 @@ def main():
     ap.add_argument('--cfl', type=float, default=0.4, help='CFL do campo inicial (define dt)')
     ap.add_argument('--stats-from', type=float, default=None,
                     help='início da janela das médias (padrão: T/2)')
-    ap.add_argument('--mesh-only', action='store_true', help='só gera a figura da malha')
+    ap.add_argument('--mesh-only', action='store_true', help='só gera as figuras da malha e dos contornos')
+    ap.add_argument('--animate', type=float, default=0, metavar='P',
+                    help='ao final, continua P períodos e grava a emissão de vórtices em GIF')
     add_monitor_args(ap, report=1000)
     add_control_args(ap)
     ap.add_argument('--out', default=str(DEFAULT_OUT), help='pasta de saída (padrão: results/)')
@@ -183,7 +270,9 @@ def main():
         g = PolarGrid(R0=D / 2, Rout=args.Rext * D, NT=NT, aspect=args.aspect)
         print(f'\n=== Cilindro Re = {args.Re:g}: malha {g.describe()} ===', flush=True)
         plot_mesh(g, OUT / f'cilindro_malha_NT{NT}.png')
-        print(f'  malha: {OUT / f"cilindro_malha_NT{NT}.png"}', flush=True)
+        plot_boundary_conditions(g, OUT / 'cilindro_contornos.png')
+        print(f'  malha: {OUT / f"cilindro_malha_NT{NT}.png"};  contornos: {OUT / "cilindro_contornos.png"}',
+              flush=True)
         if args.mesh_only:
             continue
         s = PolarNS(g, Re=args.Re, cfl=args.cfl, wall_speed=pulse)
@@ -212,6 +301,10 @@ def main():
         results.append(res)
         plot_case(s, res, OUT / f'{case}.png')
         save_checkpoint(s, OUT / f'{case}.npz')
+        if args.animate and not getattr(s, 'stopped', False):
+            gif = OUT / f'{case}_vortices.gif'
+            n = animate(s, gif, periods=args.animate, St=res['St'] or 0.164)
+            print(f'  animação ({n} quadros, t = {s.t:.1f}): {gif}', flush=True)
         if getattr(s, 'stopped', False):
             print('\n  simulação interrompida: continue com o mesmo comando + --resume', flush=True)
             break

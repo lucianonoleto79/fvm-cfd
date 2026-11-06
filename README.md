@@ -250,6 +250,12 @@ geométrica de R = D/2 até R_ext = 40 D, células quase quadradas (Δr / rΔθ 
   <img src="docs/figures/cilindro_malha_NT128.png" width="950" alt="Malha O em torno do cilindro">
 </p>
 
+**Condições de contorno** (`PolarNS.update_outer` e parede em `python/polar.py`):
+
+<p align="center">
+  <img src="docs/figures/cilindro_contornos.png" width="700" alt="Condições de contorno do cilindro">
+</p>
+
 **Solver** (`PolarNS`): equações em coordenadas polares com todos os termos de curvatura,
 malha desencontrada, passo fracionário com projeção incremental (divergência ~1e-14),
 Crank–Nicolson na difusão, Adams–Bashforth 2 + QUICK na convecção. Contorno externo:
@@ -278,6 +284,13 @@ Verificado antes contra a solução exata de Taylor–Couette (erro de 2ª ordem
 
 <p align="center">
   <img src="docs/figures/cilindro_Re100_NT256.png" width="900" alt="Cilindro Re = 100: forças e vorticidade">
+</p>
+
+Emissão de vórtices (malha 128 × 128, 3 períodos a partir de t = 150;
+`python python/cylinder.py --NT 128 --resume --animate 3`):
+
+<p align="center">
+  <img src="docs/figures/cilindro_Re100_vortices.gif" width="800" alt="Animação da emissão de vórtices">
 </p>
 
 ## Limitações
