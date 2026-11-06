@@ -29,13 +29,13 @@ Uso:
 import argparse
 import json
 from pathlib import Path
-import time
 
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
 import ghia
+from control import add_control_args, clear_stale_commands, control_from_args, maybe_resume, run_loop, save_checkpoint
 from monitor import ConvergenceMonitor, add_monitor_args, monitor_from_args
 
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / 'results'
@@ -187,19 +187,22 @@ class CavitySolver:
             self.converged = True
         return ru, rv, rm
 
-    def run(self, max_iter=20000, report=100, monitor=None):
+    def run(self, max_iter=20000, report=100, monitor=None, control=None):
         """Itera até convergir. `monitor` (ConvergenceMonitor) imprime os resíduos e
-        desenha a curva de convergência; sem ele, só a tabela a cada `report` iterações."""
+        desenha a curva de convergência; sem ele, só a tabela a cada `report` iterações.
+        `control` (RunControl) permite pausar, salvar parciais e interromper."""
         if monitor is None:
             monitor = ConvergenceMonitor(['u', 'v', 'massa'], tol=self.tol, report=report)
-        t0 = time.perf_counter()
-        monitor.start(self)
-        while not self.converged and self.iter < max_iter:
-            self.iterate()
-            monitor.update(self)
-        self.seconds = time.perf_counter() - t0
-        monitor.finish(self)
-        return self.converged
+        return run_loop(self, max_iter, monitor, control)
+
+    def get_state(self):
+        return {'u': self.u, 'v': self.v, 'p': self.p}
+
+    def set_state(self, st):
+        for k in ('u', 'v', 'p'):
+            if st[k].shape != getattr(self, k).shape:
+                raise ValueError(f'checkpoint com malha diferente: {k} {st[k].shape}')
+        self.u, self.v, self.p = (np.array(st[k], dtype=float) for k in ('u', 'v', 'p'))
 
     # ---------------------------------------------------- pós-processamento
     def u_centerline(self):
@@ -238,7 +241,8 @@ class CavitySolver:
         keep[ghia.SUSPECT_V.get(Re, [])] = False
         vx, gv = self.primary_vortex(), ghia.VORTEX[Re]
         return dict(Re=Re, N=self.nx, iter=self.iter, converged=self.converged,
-                    seconds=round(self.seconds, 1),
+                    seconds=round(getattr(self, 'seconds_total', getattr(self, 'seconds', 0.0)), 1),
+                    interrompido=getattr(self, 'stopped', False),
                     u_rms=float(np.sqrt(np.mean(eu ** 2))), u_max=float(np.abs(eu).max()),
                     v_rms=float(np.sqrt(np.mean(ev ** 2))), v_max=float(np.abs(ev).max()),
                     v_max_clean=float(np.abs(ev[keep]).max()),
@@ -301,10 +305,12 @@ def main():
     ap.add_argument('--max-iter', type=int, default=20000)
     ap.add_argument('--replot', action='store_true', help='só refaz as figuras a partir dos .npz salvos')
     add_monitor_args(ap, report=100)
+    add_control_args(ap)
     ap.add_argument('--out', default=str(DEFAULT_OUT), help='pasta de saída (padrão: results/ na raiz do repositório)')
     args = ap.parse_args()
     OUT = Path(args.out)
     OUT.mkdir(parents=True, exist_ok=True)
+    clear_stale_commands(args, OUT)
 
     if args.replot:
         for Re in args.Re:
@@ -318,27 +324,47 @@ def main():
     for Re in args.Re:
         print(f'\n=== Re = {Re}, malha {args.N}x{args.N} ===', flush=True)
         s = CavitySolver(Re=Re, N=args.N, alpha_u=args.alpha, tol=args.tol)
+        case = f'cavidade_Re{Re}_N{args.N}'
+        ckpt = OUT / f'{case}_parcial.npz'
+        maybe_resume(args, s, ckpt, final_file=OUT / f'{case}.npz')
         mon = monitor_from_args(args, ['u', 'v', 'massa'], args.tol,
-                                OUT / f'convergencia_cavidade_Re{Re}_N{args.N}.png',
+                                OUT / f'convergencia_{case}.png',
                                 f'Cavidade Re = {Re}, {args.N}x{args.N}')
-        s.run(max_iter=args.max_iter, monitor=mon)
+        # "salvar parcial" grava, além do checkpoint, a figura do campo atual
+        ctl = control_from_args(args, OUT, ckpt,
+                                on_save=lambda s: plot_case(s, OUT / f'{case}_parcial.png'))
+        if not s.converged:                          # caso reaproveitado já está pronto
+            s.run(max_iter=args.max_iter, monitor=mon, control=ctl)
         r = s.compare_ghia()
         results.append(r)
-        plot_case(s, OUT / f'cavidade_Re{Re}_N{args.N}.png')
-        np.savez(OUT / f'cavidade_Re{Re}_N{args.N}.npz', u=s.u, v=s.v, p=s.p, history=np.array(s.history))
+        plot_case(s, OUT / f'{case}.png')
+        save_checkpoint(s, OUT / f'{case}.npz')      # u, v, p, history (+ iter, converged, seconds)
+        if getattr(s, 'stopped', False):
+            pend = [x for x in args.Re if x not in [q['Re'] for q in results]]
+            print(f'\n  simulação interrompida: resultados de Re = {Re} são parciais'
+                  + (f'; casos não rodados: Re = {pend}' if pend else '')
+                  + '\n  continue com o mesmo comando + --resume', flush=True)
+            break
 
     print('\n Re   N    iter  conv   psi_min    Ghia     dpsi%   centro (x, y)      '
           'u_max   v_max   v_max*  tempo')
     for r in results:
         vx, gv = r['vortex'], r['ghia_vortex']
-        print(f"{r['Re']:5d} {r['N']:4d} {r['iter']:6d}  {'sim' if r['converged'] else 'não':4s} "
+        conv = 'sim' if r['converged'] else 'int' if r['interrompido'] else 'não'
+        print(f"{r['Re']:5d} {r['N']:4d} {r['iter']:6d}  {conv:4s} "
               f"{vx['psi']:.5f} {gv['psi']:.5f} {r['psi_err_pct']:6.2f}  "
               f"({vx['x']:.4f}, {vx['y']:.4f})  {r['u_max']:.4f}  {r['v_max']:.4f}  "
               f"{r['v_max_clean']:.4f}  {r['seconds']:.0f} s")
-    print('* v_max* exclui o ponto suspeito de Ghia (Re = 400, x = 0,9063)')
+    print('* v_max* exclui o ponto suspeito de Ghia (Re = 400, x = 0,9063);  '
+          'conv = int: interrompida pelo usuário (resultado parcial)')
     with open(OUT / f'resultados_N{args.N}.json', 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('\n  abortado pelo usuário (2º Ctrl+C); o último checkpoint *_parcial.npz foi mantido',
+              flush=True)
+        raise SystemExit(130)

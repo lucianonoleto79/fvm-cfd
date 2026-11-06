@@ -127,7 +127,9 @@ class ConvergenceMonitor:
                 lo, hi = min(lo, self.tol), max(hi, self.tol)
             ax.set_ylim(lo / 3, hi * 3)
         ax.set_xlim(0, max(h[-1, 0], 10))
-        state = ('convergiu' if s.converged else 'não convergiu') if final else 'em andamento'
+        state = ('convergiu' if s.converged else
+                 'interrompida' if getattr(s, 'stopped', False) else 'não convergiu') \
+            if final else 'em andamento'
         el = time.perf_counter() - self.t0
         ax.set_title(f'{self.title}  —  it {int(h[-1, 0])}, {el:.0f} s, {state}'.strip(' —'),
                      fontsize=9)
@@ -141,6 +143,15 @@ class ConvergenceMonitor:
             self._fig.canvas.draw_idle()
             plt.pause(0.001)
         self._last_plot = time.perf_counter()
+
+    def redraw(self, s):
+        """Atualiza a curva agora (ex.: ao pausar ou salvar resultados parciais)."""
+        self._draw(s)
+
+    def shift_clock(self, dt):
+        """Desconta `dt` segundos (pausa) do tempo e da taxa de iterações."""
+        self.t0 += dt
+        self._last_plot += dt
 
     # ------------------------------------------------------ ganchos do solver
     def start(self, s):
@@ -162,7 +173,8 @@ class ConvergenceMonitor:
         if self.report and s.history and s.iter % self.report != 0 and not s.converged:
             self._row(s)                             # última linha quando parou por max_iter
         if self.report:
-            msg = 'convergiu' if s.converged else 'NÃO convergiu'
+            msg = ('convergiu' if s.converged else
+                   'interrompida pelo usuário' if getattr(s, 'stopped', False) else 'NÃO convergiu')
             print(f'  -> {msg} em {s.iter} iterações, {time.perf_counter() - self.t0:.1f} s',
                   flush=True)
         self._draw(s, final=True)

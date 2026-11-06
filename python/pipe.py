@@ -22,6 +22,7 @@ from pathlib import Path
 import numpy as np
 
 from fvm3d import Grid3D, SIMPLEC3D
+from control import add_control_args, clear_stale_commands, control_from_args, maybe_resume, save_checkpoint
 from monitor import add_monitor_args, monitor_from_args
 
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / 'results'
@@ -77,7 +78,8 @@ def analyze(s, Re, L):
     f = -dpdz * D / (0.5 * RHO * U ** 2)
     Q = s.V[2][:, :, kz].sum() * g.area[2]
     return dict(n=g.n[0] - 2, h=float(g.h[0]), cells=int(np.prod(g.n)), fluid_cells=int(s.fluid.sum()),
-                iter=s.iter, converged=s.converged, seconds=round(s.seconds, 1),
+                iter=s.iter, converged=s.converged, seconds=round(getattr(s, 'seconds_total', getattr(s, 'seconds', 0.0)), 1),
+                interrompido=getattr(s, 'stopped', False),
                 wc_max=float(wf[ic, ic]), wc_err_pct=float(100 * (wf[ic, ic] - 2 * U) / (2 * U)),
                 prof_rms=float(np.sqrt(np.mean(err ** 2))), prof_max=float(np.abs(err).max()),
                 fRe=float(f * Re), fRe_err_pct=float(100 * (f * Re - 64) / 64),
@@ -183,10 +185,12 @@ def main():
     ap.add_argument('--max-iter', type=int, default=3000)
     ap.add_argument('--reanalyze', action='store_true', help='refaz análise/figuras a partir dos .npz')
     add_monitor_args(ap, report=50)
+    add_control_args(ap)
     ap.add_argument('--out', default=str(DEFAULT_OUT), help='pasta de saída (padrão: results/ na raiz do repositório)')
     args = ap.parse_args()
     OUT = Path(args.out)
     OUT.mkdir(parents=True, exist_ok=True)
+    clear_stale_commands(args, OUT)
 
     study, last = [], None
     old = {}
@@ -202,16 +206,31 @@ def main():
             s.converged, s.seconds = old[n]['converged'], old[n]['seconds']
         else:
             print(f'\n=== Tubo: Re = {args.Re:g}, {n} células no diâmetro, L = {args.L:g} D ===', flush=True)
+            case = f'tubo_Re{args.Re:g}_n{n}'
+            ckpt = OUT / f'{case}_parcial.npz'
+            maybe_resume(args, s, ckpt, final_file=OUT / f'{case}.npz')
             mon = monitor_from_args(args, ['u', 'v', 'w', 'massa'], args.tol,
-                                    OUT / f'convergencia_tubo_Re{args.Re:g}_n{n}.png',
+                                    OUT / f'convergencia_{case}.png',
                                     f'Tubo Re = {args.Re:g}, {n} células no diâmetro')
-            s.run(max_iter=args.max_iter, monitor=mon)
+
+            def partial_fig(s, case=case):          # "salvar parcial": figura do campo atual
+                r, a = analyze(s, args.Re, args.L)
+                plot(s, r, a, study + [r], args.Re, OUT / f'{case}_parcial.png')
+
+            ctl = control_from_args(args, OUT, ckpt, on_save=partial_fig)
+            if not s.converged:                      # caso reaproveitado já está pronto
+                s.run(max_iter=args.max_iter, monitor=mon, control=ctl)
         res, aux = analyze(s, args.Re, args.L)
         study.append(res)
         last = (s, res, aux)
         if not args.reanalyze:
-            np.savez(OUT / f'tubo_Re{args.Re:g}_n{n}.npz', u=s.V[0], v=s.V[1], w=s.V[2], p=s.p,
-                 history=np.array(s.history))
+            save_checkpoint(s, OUT / f'{case}.npz')  # u, v, w, p, history (+ iter, converged, seconds)
+            if getattr(s, 'stopped', False):
+                pend = args.n[args.n.index(n) + 1:]
+                print(f'\n  simulação interrompida: resultados de n = {n} são parciais'
+                      + (f'; malhas não rodadas: n = {pend}' if pend else '')
+                      + '\n  continue com o mesmo comando + --resume', flush=True)
+                break
     s, res, aux = last
     plot(s, res, aux, study, args.Re, OUT / f'tubo_Re{args.Re:g}.png')
 
@@ -221,7 +240,7 @@ def main():
         print(f"{q['n']:3d}  {q['h']:.4f}  {q['cells']:8d}  {q['iter']:4d}  {q['wc_err_pct']:+8.3f} %  "
               f"{100 * q['prof_rms']:8.3f} %  {100 * q['prof_max']:8.3f} %  {q['fRe']:6.2f}  "
               f"{q['fRe_err_pct']:+6.2f} %  {q['Le']:8.2f}  {q['Le_durst']:10.2f}  {q['Q_ratio']:.4f}  "
-              f"{q['seconds']:.0f} s")
+              f"{q['seconds']:.0f} s" + ('  (interrompida: parcial)' if q.get('interrompido') else ''))
     if len(study) > 1:
         for key in ('prof_rms', 'fRe_err_pct', 'wc_err_pct'):
             e = np.abs([q[key] for q in study]); h = np.array([q['h'] for q in study])
@@ -232,4 +251,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('\n  abortado pelo usuário (2º Ctrl+C); o último checkpoint *_parcial.npz foi mantido',
+              flush=True)
+        raise SystemExit(130)

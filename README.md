@@ -24,11 +24,12 @@ fvm-cfd/
 │   ├── ghia.py          dados de referência de Ghia et al. (1982)
 │   ├── fvm3d.py         solver 3D geral (SIMPLEC, fronteira imersa, BiCGSTAB + CG/AMG)
 │   ├── monitor.py       resíduos no terminal + curva de convergência durante a simulação
+│   ├── control.py       pausar / salvar parciais / interromper, checkpoints e --resume
 │   └── pipe.py          validação 3D: tubo circular
 ├── web/                 versão JavaScript (roda no navegador / GitHub Pages)
 │   ├── index.html  fvm.js  ghia.js
 │   └── serve.ps1        servidor local em PowerShell (alternativa: python -m http.server)
-├── tests/               testes rápidos (pytest, ~30 s)
+├── tests/               testes rápidos (pytest, ~20 s)
 ├── docs/                figuras e métricas de referência das validações
 ├── .github/workflows/   testes a cada push, validação completa sob demanda, Pages
 ├── .devcontainer/       ambiente pronto para GitHub Codespaces
@@ -97,6 +98,42 @@ segundos — dá para deixá-la aberta num visualizador de imagens enquanto o c�
 
 Em código: `s.run(monitor=ConvergenceMonitor(['u', 'v', 'massa'], tol=1e-6, plot_file='conv.png'))`
 (`from monitor import ConvergenceMonitor`).
+
+### Pausar, salvar resultados parciais e interromper
+
+Com a simulação rodando, ela pode ser comandada de três formas (`python/control.py`):
+
+| Ação | Teclado (terminal) | Arquivo na pasta de saída | Efeito |
+|---|---|---|---|
+| Pausar / continuar | `p` | criar / apagar `PAUSAR` | congela o cálculo; a pausa não entra no tempo nem em it/s |
+| Salvar parciais | `s` | criar `SALVAR` | grava o checkpoint `*_parcial.npz`, a curva de convergência e a figura do campo atual (`*_parcial.png`) |
+| Interromper | `q` ou `Ctrl+C` | criar `PARAR` | termina a iteração atual, salva o checkpoint, gera figuras e métricas do resultado parcial (marcado como interrompido) e encerra |
+| Abortar | `Ctrl+C` duas vezes | — | sai na hora (código 130), mantendo o último checkpoint completo |
+
+As teclas funcionam sem Enter (Linux, macOS e Windows) quando o script roda num terminal
+interativo. Os arquivos servem para simulações em segundo plano, por ssh, no Codespaces ou no
+GitHub Actions, por exemplo `touch results/PAUSAR` e depois `rm results/PAUSAR`; no PowerShell,
+`ni results\PARAR`. Eles valem para todas as simulações que gravam na mesma pasta.
+`SALVAR` e `PARAR` são apagados ao serem atendidos, e os que sobram de uma execução
+anterior são removidos quando o script começa.
+
+Além disso, um checkpoint é gravado a cada `--checkpoint S` segundos (padrão 300). Para
+continuar de onde parou, rode o mesmo comando com `--resume`: os casos já convergidos
+são reaproveitados, o interrompido continua do checkpoint e o histórico de resíduos segue
+contínuo. Retomar dá o mesmo resultado de uma rodada sem interrupção (verificado em
+`tests/test_controle.py`).
+
+```bash
+python python/cavity.py                 # ... q (ou Ctrl+C) no meio do Re = 400
+python python/cavity.py --resume        # Re = 100 reaproveitado, Re = 400 continua, depois Re = 1000
+```
+
+| Opção | Efeito |
+|---|---|
+| `--checkpoint S` | checkpoint a cada S segundos (0: só ao salvar/interromper) |
+| `--resume` | retoma dos checkpoints e reaproveita casos concluídos |
+| `--no-keys` | não lê o teclado |
+| `--control-dir D` | pasta vigiada pelos arquivos de comando (padrão: a de `--out`) |
 
 Versão web: `python -m http.server -d web 8000` e abra `http://localhost:8000/`
 (ou `?Re=1000&N=128&auto` para disparar direto). No Windows sem Python:

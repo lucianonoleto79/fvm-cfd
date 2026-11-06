@@ -32,12 +32,12 @@ Arranjo (índices [i, j, k]):
     V[1]: (nx, ny+1, nz)     v nas faces y
     V[2]: (nx, ny, nz+1)     w nas faces z
 """
-import time
 
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
+from control import run_loop
 from monitor import ConvergenceMonitor
 
 try:
@@ -316,16 +316,23 @@ class SIMPLEC3D:
             self.converged = True
         return (*r, rm)
 
-    def run(self, max_iter=5000, report=50, monitor=None):
+    def run(self, max_iter=5000, report=50, monitor=None, control=None):
         """Itera até convergir. `monitor` (ConvergenceMonitor) imprime os resíduos e
-        desenha a curva de convergência; sem ele, só a tabela a cada `report` iterações."""
+        desenha a curva de convergência; sem ele, só a tabela a cada `report` iterações.
+        `control` (RunControl) permite pausar, salvar parciais e interromper."""
         if monitor is None:
             monitor = ConvergenceMonitor(['u', 'v', 'w', 'massa'], tol=self.tol, report=report)
-        t0 = time.perf_counter()
-        monitor.start(self)
-        while not self.converged and self.iter < max_iter:
-            self.iterate()
-            monitor.update(self)
-        self.seconds = time.perf_counter() - t0
-        monitor.finish(self)
-        return self.converged
+        return run_loop(self, max_iter, monitor, control)
+
+    def get_state(self):
+        return {'u': self.V[0], 'v': self.V[1], 'w': self.V[2], 'p': self.p}
+
+    def set_state(self, st):
+        new = [st['u'], st['v'], st['w'], st['p']]
+        old = [*self.V, self.p]
+        for a, b in zip(new, old):
+            if a.shape != b.shape:
+                raise ValueError(f'checkpoint com malha diferente: {a.shape} != {b.shape}')
+        self.V = [np.array(a, dtype=float) for a in new[:3]]
+        self.p = np.array(new[3], dtype=float)
+        self._amg = None                             # hierarquia AMG é refeita
