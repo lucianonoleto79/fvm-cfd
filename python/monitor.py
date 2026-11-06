@@ -48,8 +48,11 @@ def monitor_from_args(args, names, tol, plot_file, title):
 
 class ConvergenceMonitor:
     def __init__(self, names, tol=None, report=100, plot_file=None, live=False,
-                 refresh=5.0, title=''):
+                 refresh=5.0, title='', logy=True, ylabel='resíduo', dt=None):
+        """logy=False e dt (passo de tempo) adaptam o monitor a simulações transientes:
+        curvas em escala linear (ex.: Cd, Cl) contra o tempo t = iter*dt."""
         self.names = list(names)
+        self.logy, self.ylabel, self.dt = logy, ylabel, dt
         self.tol = tol
         self.report = report
         self.plot_file = Path(plot_file) if plot_file else None
@@ -65,7 +68,9 @@ class ConvergenceMonitor:
     def _header(self):
         cols = ''.join(f'{n:>11s}' for n in self.names)
         tol = f'   (tol = {self.tol:.0e})' if self.tol else ''
-        line = f'  {"iter":>6s}{cols}{"max/tol":>10s}{"it/s":>8s}{"tempo":>9s}'
+        tcol = f'{"t":>9s}' if self.dt else ''
+        ratio = f'{"max/tol":>10s}' if self.tol else ''
+        line = f'  {"iter":>6s}{tcol}{cols}{ratio}{"it/s":>8s}{"tempo":>9s}'
         print(line + tol, flush=True)
         print('  ' + '-' * (len(line) - 2), flush=True)
 
@@ -73,9 +78,11 @@ class ConvergenceMonitor:
         it, *r = s.history[-1]
         el = time.perf_counter() - self.t0
         rate = (it - self.it0) / el if el > 0 else 0.0
-        ratio = f'{max(r) / self.tol:10.2e}' if self.tol else f'{"":10s}'
-        cols = ''.join(f'{x:11.3e}' for x in r)
-        print(f'  {it:6d}{cols}{ratio}{rate:8.1f}{el:8.1f}s', flush=True)
+        ratio = f'{max(r) / self.tol:10.2e}' if self.tol else ''
+        tcol = f'{it * self.dt:9.3f}' if self.dt else ''
+        fmt = '{:11.3e}' if self.logy else '{:11.5f}'
+        cols = ''.join(fmt.format(x) for x in r)
+        print(f'  {it:6d}{tcol}{cols}{ratio}{rate:8.1f}{el:8.1f}s', flush=True)
 
     # ---------------------------------------------------------------- curva
     def _setup_plot(self):
@@ -95,14 +102,15 @@ class ConvergenceMonitor:
             self._fig = Figure(figsize=(7, 4.2))
             FigureCanvasAgg(self._fig)
         ax = self._ax = self._fig.add_subplot(111)
-        ax.set_yscale('log')
+        if self.logy:
+            ax.set_yscale('log')
+            ax.set_ylim(min(self.tol or 1e-8, 1e-8), 1.0)   # eixos válidos antes do 1º ponto
         ax.set_xlim(0, 10)
-        ax.set_ylim(min(self.tol or 1e-8, 1e-8), 1.0)   # eixos válidos antes do 1º ponto
         self._lines = [ax.plot([], [], lw=1.2, label=n)[0] for n in self.names]
         if self.tol:
             ax.axhline(self.tol, color='k', ls='--', lw=0.8, label='tolerância')
-        ax.set_xlabel('iteração')
-        ax.set_ylabel('resíduo')
+        ax.set_xlabel('t' if self.dt else 'iteração')
+        ax.set_ylabel(self.ylabel)
         ax.grid(True, which='both', alpha=0.3)
         ax.legend(loc='upper right', fontsize=8)
         self._fig.tight_layout()
@@ -114,20 +122,26 @@ class ConvergenceMonitor:
         if h.size == 0:
             return
         r = h[:, 1:].copy()
-        r[~(r > 0) | ~np.isfinite(r)] = np.nan       # resíduo nulo não cabe em escala log
+        x = h[:, 0] * (self.dt or 1)
+        if self.logy:
+            r[~(r > 0) | ~np.isfinite(r)] = np.nan   # resíduo nulo não cabe em escala log
         for k, ln in enumerate(self._lines):
-            ln.set_data(h[:, 0], r[:, k])
+            ln.set_data(x, r[:, k])
         # Escala pelos dados a partir da 2ª iteração: na 1ª o campo inicial é nulo e a
         # normalização do resíduo dá valores sem significado (0 ou ~1e30).
         ref = r[1:] if len(r) > 1 else r
         ax = self._ax
-        if np.isfinite(ref).any():
+        if not self.logy:
+            ax.relim()
+            ax.autoscale_view(scalex=False)
+        elif np.isfinite(ref).any():
             lo, hi = np.nanmin(ref), np.nanmax(ref)
             if self.tol:
                 lo, hi = min(lo, self.tol), max(hi, self.tol)
             ax.set_ylim(lo / 3, hi * 3)
-        ax.set_xlim(0, max(h[-1, 0], 10))
-        state = ('convergiu' if s.converged else
+        ax.set_xlim(0, max(x[-1], 10 * (self.dt or 1)))
+        state = ('concluída' if getattr(s, 'transient', False) and not getattr(s, 'stopped', False)
+                 else 'convergiu' if s.converged else
                  'interrompida' if getattr(s, 'stopped', False) else 'não convergiu') \
             if final else 'em andamento'
         el = time.perf_counter() - self.t0
@@ -173,7 +187,8 @@ class ConvergenceMonitor:
         if self.report and s.history and s.iter % self.report != 0 and not s.converged:
             self._row(s)                             # última linha quando parou por max_iter
         if self.report:
-            msg = ('convergiu' if s.converged else
+            msg = ('concluída' if getattr(s, 'transient', False) and not getattr(s, 'stopped', False)
+                   else 'convergiu' if s.converged else
                    'interrompida pelo usuário' if getattr(s, 'stopped', False) else 'NÃO convergiu')
             print(f'  -> {msg} em {s.iter} iterações, {time.perf_counter() - self.t0:.1f} s',
                   flush=True)
