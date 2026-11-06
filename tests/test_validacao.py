@@ -8,6 +8,7 @@ import numpy as np
 import ghia
 from cavity import CavitySolver
 from fvm3d import shift
+from monitor import ConvergenceMonitor
 from pipe import analyze, build
 
 
@@ -33,6 +34,19 @@ def test_cavidade_2d_conserva_massa():
     u, v, dx = s.u, s.v, s.dx
     div = (u[1:] - u[:-1]) * dx + (v[:, 1:] - v[:, :-1]) * dx
     assert np.abs(div).max() < 1e-6
+
+
+def test_monitor_curva_e_terminal(tmp_path, capsys):
+    png = tmp_path / 'conv.png'
+    mon = ConvergenceMonitor(['u', 'v', 'massa'], tol=1e-6, report=50, plot_file=png,
+                             refresh=0.0, title='teste')
+    s = CavitySolver(Re=100, N=16, tol=1e-6)
+    assert s.run(max_iter=2000, monitor=mon)
+    out = capsys.readouterr().out
+    assert 'max/tol' in out and 'convergiu' in out
+    assert f'{s.iter:6d}' in out                       # última iteração impressa
+    assert png.read_bytes()[:8] == b'\x89PNG\r\n\x1a\n'
+    assert not (tmp_path / 'conv.png.tmp').exists()
 
 
 def test_tubo_3d_poiseuille():

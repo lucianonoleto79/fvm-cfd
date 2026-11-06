@@ -1,0 +1,24 @@
+
+=== Cilindro Re = 100: malha 148 x 128 = 18944 volumes;  R_ext = 80 D;  dr(parede) = 0.0174 D, r dtheta(parede) = 0.0245 D, dr(externo) = 2.697 D ===
+  malha: results/dominio/O_R80/cilindro_malha_NT128.png;  contornos: results/dominio/O_R80/cilindro_contornos.png
+  dt = 0.00508, 29523 passos até t = 150
+    iter        t         Cd         Cl    it/s    tempo
+  ------------------------------------------------------
+  [controle] Ctrl+C interrompe e salva;  arquivos PAUSAR/SALVAR/PARAR em results/dominio/O_R80
+    5000   25.404    1.35666    0.28688    90.5    55.2s
+   10000   50.808    1.33100   -0.00045    91.3   109.6s
+   15000   76.212    1.33150   -0.26528    92.2   162.7s
+   20000  101.615    1.34340   -0.29988    92.0   217.5s
+   25000  127.019    1.33238   -0.08590    92.1   271.5s
+  [controle] checkpoint da it 29523 em results/dominio/O_R80/cilindro_Re100_NT128_parcial.npz (retome com --resume)
+   29523  150.000    1.33574   -0.31039    92.1   320.4s
+  -> concluída em 29523 iterações, 320.4 s
+
+  NT    NR   volumes   ciclos   Cd médio   amp Cd    amp Cl     St      tempo
+ 128   148    18944     11    1.3345   0.0095   0.3206   0.1634   320 s
+
+  Referências (confira nas fontes):
+    Braza, Chassaing & Ha Minh (1986)          Cd 1.364  amp Cd 0.015  amp Cl 0.250  St 0.160
+    Liu, Zheng & Sung (1998)                   Cd 1.350  amp Cd 0.012  amp Cl 0.339  St 0.164
+    Park, Kwon & Choi (1998)                   Cd 1.330  amp Cd   -    amp Cl 0.332  St 0.165
+    Williamson (1988), experimental, St(Re)    Cd   -    amp Cd   -    amp Cl   -    St 0.164
