@@ -142,7 +142,8 @@ def describe_case(name, r):
     return tipo, malha, met, status
 
 
-def cases_table(results=RESULTS):
+def cases_table(results=None):
+    results = RESULTS if results is None else results
     rows = []
     for f in sorted(Path(results).glob('*/resultados.json')):
         name = f.parent.name
@@ -150,7 +151,7 @@ def cases_table(results=RESULTS):
             continue
         r = json.load(open(f, encoding='utf-8'))
         tipo, malha, met, status = describe_case(name, r)
-        rel = f.parent.relative_to(REPO).as_posix() if f.parent.is_relative_to(REPO) else name
+        rel = f.parent.relative_to(REPO).as_posix() if f.parent.is_relative_to(REPO) else f'results/{name}'
         figs = ' · '.join(f'[{lab}]({rel}/{fn})' for lab, fn in
                           (('domínio', '01_dominio.png'), ('malha', '02_malha.png'),
                            ('convergência', '03_convergencia.png'), ('resultados', '04_resultados.png'))
@@ -163,8 +164,10 @@ def cases_table(results=RESULTS):
     return head + '\n' + '\n'.join(rows), len(rows)
 
 
-def update_readme_cases(readme=README, results=RESULTS):
+def update_readme_cases(readme=None, results=None):
     """Reescreve a tabela de casos entre os marcadores (cria a seção no fim se não existir)."""
+    readme = README if readme is None else readme
+    results = RESULTS if results is None else results
     table, n = cases_table(results)
     block = (f'{CASES_BEGIN}\n_{n} casos em `results/`, atualizado em '
              f'{datetime.datetime.now():%Y-%m-%d %H:%M}._\n\n{table}\n{CASES_END}')
