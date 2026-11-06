@@ -44,8 +44,38 @@ fvm-cfd/
 └── requirements-dev.txt + pytest
 ```
 
-Os scripts gravam figuras (`.png`), campos (`.npz`) e métricas (`.json`) em `results/`
-(ignorada pelo git; mude com `--out`).
+### Organização dos resultados
+
+Cada caso simulado tem sua pasta em `results/` (mude com `--out`), sempre com os mesmos nomes.
+**Domínio e malha são gerados antes de a simulação começar**, e a curva de convergência é
+atualizada enquanto ela roda:
+
+```
+results/<caso>/
+├── 01_dominio.png        domínio e condições de contorno     (antes de simular)
+├── 02_malha.png          malha                                (antes de simular)
+├── 03_convergencia.png   resíduos (permanente) ou Cd, Cl × t (transiente), durante a simulação
+├── 04_resultados.png     resultados e comparação com a referência
+├── 05_animacao_*.gif     animação (cilindro, --animate)
+├── resultados.json       métricas
+├── simulacao.log         saída do terminal (rodadas em segundo plano)
+├── campos.npz            campos finais           (não versionado)
+└── parcial.npz           checkpoint p/ --resume  (não versionado)
+results/estudo_<nome>/    estudos com vários casos (malha, domínio): resumo .json e figuras
+```
+
+| Pasta | Caso |
+|---|---|
+| `cavidade_Re{100,400,1000}_N128` | cavidade, malha 128 × 128 |
+| `tubo_Re100_n{11,15,21}` | tubo 3D, 11/15/21 células no diâmetro |
+| `cilindro_O_Re100_NT{128,192,256}_R40` | cilindro, malha O, estudo de malha |
+| `cilindro_O_Re100_NT128_R{10,20,40,80}` | cilindro, malha O, estudo de domínio |
+| `cilindro_ret_Re100_{P,M,G}_h0.025` | cilindro, domínio retangular, estudo de domínio |
+| `cilindro_ret_Re100_M_h0.03333` | cilindro, retangular, sensibilidade à malha |
+| `estudo_cavidade_N128`, `estudo_malha_tubo_Re100`, `estudo_cilindro_O_Re100`, `estudo_cilindro_ret_Re100`, `estudo_dominio_cilindro_Re100` | resumos dos estudos |
+
+As figuras, métricas e logs de `results/` são versionados no git; os campos (`.npz`, ~70 MB)
+não — regenere-os rodando os scripts.
 
 ## Como rodar na nuvem
 
@@ -87,7 +117,7 @@ python python/cylinder.py --NT 128         # cilindro Re = 100, malha 128 x 128 
 ### Monitor de convergência
 
 Durante a simulação os resíduos (L1 normalizados de u, v, [w] e de massa) são impressos no
-terminal e a curva de convergência é regravada em `results/convergencia_*.png` a cada poucos
+terminal e a curva de convergência é regravada em `results/<caso>/03_convergencia.png` a cada poucos
 segundos — dá para deixá-la aberta num visualizador de imagens enquanto o cálculo roda:
 
 ```
@@ -115,7 +145,7 @@ Com a simulação rodando, ela pode ser comandada de três formas (`python/contr
 | Ação | Teclado (terminal) | Arquivo na pasta de saída | Efeito |
 |---|---|---|---|
 | Pausar / continuar | `p` | criar / apagar `PAUSAR` | congela o cálculo; a pausa não entra no tempo nem em it/s |
-| Salvar parciais | `s` | criar `SALVAR` | grava o checkpoint `*_parcial.npz`, a curva de convergência e a figura do campo atual (`*_parcial.png`) |
+| Salvar parciais | `s` | criar `SALVAR` | grava o checkpoint `parcial.npz`, a curva de convergência e a figura do campo atual (`parcial.png`), na pasta do caso |
 | Interromper | `q` ou `Ctrl+C` | criar `PARAR` | termina a iteração atual, salva o checkpoint, gera figuras e métricas do resultado parcial (marcado como interrompido) e encerra |
 | Abortar | `Ctrl+C` duas vezes | — | sai na hora (código 130), mantendo o último checkpoint completo |
 

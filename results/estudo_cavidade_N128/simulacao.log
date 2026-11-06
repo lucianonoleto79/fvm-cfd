@@ -1,0 +1,65 @@
+
+=== Re = 100, malha 128x128 ===
+  it   100  ru 8.74e-04  rv 1.11e-03  massa 5.01e-05    16.8 s
+  it   200  ru 3.77e-04  rv 5.00e-04  massa 2.48e-05    33.5 s
+  it   300  ru 2.29e-04  rv 2.92e-04  massa 1.46e-05    50.2 s
+  it   400  ru 1.57e-04  rv 1.91e-04  massa 9.28e-06    66.9 s
+  it   500  ru 1.13e-04  rv 1.32e-04  massa 6.34e-06    83.5 s
+  it   600  ru 8.24e-05  rv 9.49e-05  massa 4.53e-06    99.8 s
+  it   700  ru 6.04e-05  rv 6.90e-05  massa 3.30e-06   116.0 s
+  it   800  ru 4.43e-05  rv 5.04e-05  massa 2.42e-06   132.7 s
+  it   900  ru 3.25e-05  rv 3.68e-05  massa 1.78e-06   148.8 s
+  it  1000  ru 2.38e-05  rv 2.69e-05  massa 1.31e-06   165.2 s
+  it  1100  ru 1.74e-05  rv 1.96e-05  massa 9.65e-07   182.2 s
+  it  1200  ru 1.27e-05  rv 1.43e-05  massa 7.08e-07   198.3 s
+  it  1300  ru 9.30e-06  rv 1.05e-05  massa 5.19e-07   214.2 s
+  it  1400  ru 6.80e-06  rv 7.65e-06  massa 3.80e-07   230.4 s
+  it  1500  ru 4.97e-06  rv 5.59e-06  massa 2.79e-07   246.7 s
+  it  1600  ru 3.63e-06  rv 4.08e-06  massa 2.04e-07   263.4 s
+  it  1700  ru 2.65e-06  rv 2.98e-06  massa 1.49e-07   279.9 s
+  it  1800  ru 1.94e-06  rv 2.18e-06  massa 1.09e-07   295.9 s
+  it  1900  ru 1.42e-06  rv 1.59e-06  massa 7.97e-08   312.3 s
+  it  2000  ru 1.03e-06  rv 1.16e-06  massa 5.83e-08   328.3 s
+  it  2048  ru 8.90e-07  rv 9.99e-07  massa 5.01e-08   336.5 s
+
+=== Re = 400, malha 128x128 ===
+  it   100  ru 1.21e-03  rv 1.63e-03  massa 3.90e-04    16.7 s
+  it   200  ru 8.26e-04  rv 8.55e-04  massa 2.20e-04    33.0 s
+  it   300  ru 5.03e-04  rv 5.26e-04  massa 1.27e-04    48.7 s
+  it   400  ru 3.05e-04  rv 3.30e-04  massa 7.68e-05    64.6 s
+  it   500  ru 1.92e-04  rv 2.03e-04  massa 4.80e-05    80.4 s
+  it   600  ru 1.23e-04  rv 1.27e-04  massa 3.13e-05    96.9 s
+  it   700  ru 7.72e-05  rv 7.96e-05  massa 2.03e-05   113.0 s
+  it   800  ru 4.74e-05  rv 4.88e-05  massa 1.27e-05   129.0 s
+  it   900  ru 2.89e-05  rv 2.97e-05  massa 7.84e-06   144.6 s
+  it  1000  ru 1.75e-05  rv 1.81e-05  massa 4.80e-06   161.7 s
+  it  1100  ru 1.06e-05  rv 1.09e-05  massa 2.91e-06   178.0 s
+  it  1200  ru 6.38e-06  rv 6.61e-06  massa 1.75e-06   193.8 s
+  it  1300  ru 3.87e-06  rv 4.02e-06  massa 1.06e-06   210.5 s
+  it  1400  ru 2.35e-06  rv 2.45e-06  massa 6.40e-07   226.9 s
+  it  1500  ru 1.43e-06  rv 1.50e-06  massa 3.87e-07   243.0 s
+  it  1583  ru 9.55e-07  rv 9.98e-07  massa 2.56e-07   256.5 s
+
+=== Re = 1000, malha 128x128 ===
+  it   100  ru 2.35e-03  rv 2.39e-03  massa 1.58e-03    16.2 s
+  it   200  ru 1.03e-03  rv 1.06e-03  massa 5.72e-04    32.9 s
+  it   300  ru 5.13e-04  rv 5.36e-04  massa 2.93e-04    49.0 s
+  it   400  ru 2.56e-04  rv 2.67e-04  massa 1.61e-04    65.0 s
+  it   500  ru 1.18e-04  rv 1.29e-04  massa 8.55e-05    81.4 s
+  it   600  ru 5.32e-05  rv 5.97e-05  massa 4.21e-05    97.8 s
+  it   700  ru 2.51e-05  rv 2.88e-05  massa 2.06e-05   114.2 s
+  it   800  ru 1.33e-05  rv 1.48e-05  massa 1.01e-05   130.7 s
+  it   900  ru 7.93e-06  rv 8.42e-06  massa 5.31e-06   147.4 s
+  it  1000  ru 5.29e-06  rv 5.43e-06  massa 3.16e-06   164.5 s
+  it  1100  ru 3.75e-06  rv 3.78e-06  massa 2.07e-06   181.3 s
+  it  1200  ru 2.75e-06  rv 2.75e-06  massa 1.47e-06   197.5 s
+  it  1300  ru 2.06e-06  rv 2.05e-06  massa 1.09e-06   214.7 s
+  it  1400  ru 1.56e-06  rv 1.55e-06  massa 8.38e-07   232.0 s
+  it  1500  ru 1.20e-06  rv 1.19e-06  massa 6.48e-07   249.1 s
+  it  1570  ru 9.99e-07  rv 9.87e-07  massa 5.42e-07   261.3 s
+
+ Re   N    iter  conv   psi_min    Ghia     dpsi%   centro (x, y)      u_max   v_max   v_max*  tempo
+  100  128   2048  sim  -0.10337 -0.10342   0.05  (0.6153, 0.7378)  0.0046  0.0087  0.0087  336 s
+  400  128   1583  sim  -0.11343 -0.11391   0.42  (0.5551, 0.6058)  0.0018  0.1492  0.0048  256 s
+ 1000  128   1570  sim  -0.11727 -0.11793   0.56  (0.5309, 0.5657)  0.0031  0.0120  0.0120  261 s
+* v_max* exclui o ponto suspeito de Ghia (Re = 400, x = 0,9063)

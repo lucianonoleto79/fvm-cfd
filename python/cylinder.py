@@ -7,7 +7,7 @@ Solver transiente polar.PolarNS (passo fracionário, Crank–Nicolson + Adams–
 QUICK). Para quebrar a simetria e disparar o desprendimento de vórtices mais cedo, o
 cilindro gira brevemente no início (u_t = 0,5 sen(pi t / 2) para t < 2); depois fica parado.
 
-Saídas em results/: malha (cilindro_malha_NT*.png), histórico de Cd e Cl, campo de
+Saídas (results/<caso>/): domínio e malha (gerados antes de simular), histórico de Cd e Cl, campo de
 vorticidade, métricas (Cd médio, amplitudes, Strouhal) comparadas com a literatura.
 
 Uso:
@@ -15,6 +15,8 @@ Uso:
     python cylinder.py --NT 256 --T 150      # uma malha
     python cylinder.py --mesh-only           # só gera a malha e o esquema dos contornos
     python cylinder.py --NT 128 --resume --animate 3   # GIF da emissão de vórtices
+Cada caso fica em results/cilindro_O_Re<Re>_NT<NT>_R<Rext>/ (domínio, malha, convergência,
+resultados); o resumo dos casos, em results/estudo_cilindro_O_Re<Re>/.
 """
 import argparse
 import json
@@ -25,6 +27,7 @@ import numpy as np
 from control import (add_control_args, clear_stale_commands, control_from_args,
                      maybe_resume, save_checkpoint)
 from monitor import ConvergenceMonitor, add_monitor_args
+from casefiles import CaseDir, study_dir
 from polar import PolarGrid, PolarNS
 
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / 'results'
@@ -269,29 +272,27 @@ def main():
     for NT in args.NT:
         g = PolarGrid(R0=D / 2, Rout=args.Rext * D, NT=NT, aspect=args.aspect)
         print(f'\n=== Cilindro Re = {args.Re:g}: malha {g.describe()} ===', flush=True)
-        plot_mesh(g, OUT / f'cilindro_malha_NT{NT}.png')
-        plot_boundary_conditions(g, OUT / 'cilindro_contornos.png')
-        print(f'  malha: {OUT / f"cilindro_malha_NT{NT}.png"};  contornos: {OUT / "cilindro_contornos.png"}',
-              flush=True)
+        case = CaseDir(OUT, f'cilindro_O_Re{args.Re:g}_NT{NT}_R{args.Rext:g}')
+        plot_boundary_conditions(g, case.dominio)    # domínio e malha ANTES de simular
+        plot_mesh(g, case.malha)
+        case.announce()
         if args.mesh_only:
             continue
         s = PolarNS(g, Re=args.Re, cfl=args.cfl, wall_speed=pulse)
         n_steps = int(round(args.T / s.dt))
         print(f'  dt = {s.dt:.5f}, {n_steps} passos até t = {args.T:g}', flush=True)
-        case = f'cilindro_Re{args.Re:g}_NT{NT}'
-        ckpt = OUT / f'{case}_parcial.npz'
-        maybe_resume(args, s, ckpt)
+        maybe_resume(args, s, case.parcial)
         t_from = args.stats_from if args.stats_from is not None else args.T / 2
         mon = ConvergenceMonitor(['Cd', 'Cl'], report=args.report,
-                                 plot_file=None if args.no_curve else OUT / f'forcas_{case}.png',
+                                 plot_file=None if args.no_curve else case.convergencia,
                                  live=args.live, refresh=args.refresh, logy=False,
                                  ylabel='coeficiente', dt=s.dt, title=f'Cilindro Re = {args.Re:g}, NT = {NT}')
 
         def partial(s, case=case):
             r = stats(s, min(t_from, s.t / 2)) if s.iter > 10 else None
-            plot_case(s, r, OUT / f'{case}_parcial.png')
+            plot_case(s, r, case.parcial_png)
 
-        ctl = control_from_args(args, OUT, ckpt, on_save=partial)
+        ctl = control_from_args(args, OUT, case.parcial, on_save=partial)
         s.run(n_steps, monitor=mon, control=ctl)
         res = stats(s, min(t_from, s.t / 2))
         res.update(Re=args.Re, NT=NT, NR=g.NR, cells=g.cells, Rext=args.Rext, dt=s.dt, t=s.t,
@@ -299,10 +300,11 @@ def main():
                    dr_wall=float(g.drp[0]), seconds=round(getattr(s, 'seconds_total', 0.0), 1),
                    interrompido=bool(getattr(s, 'stopped', False)))
         results.append(res)
-        plot_case(s, res, OUT / f'{case}.png')
-        save_checkpoint(s, OUT / f'{case}.npz')
+        plot_case(s, res, case.resultado())
+        case.save_json(res)
+        save_checkpoint(s, case.campos)
         if args.animate and not getattr(s, 'stopped', False):
-            gif = OUT / f'{case}_vortices.gif'
+            gif = case.root / '05_animacao_vortices.gif'
             n = animate(s, gif, periods=args.animate, St=res['St'] or 0.164)
             print(f'  animação ({n} quadros, t = {s.t:.1f}): {gif}', flush=True)
         if getattr(s, 'stopped', False):
@@ -321,14 +323,19 @@ def main():
     for name, cd, cda, cla, st in LITERATURE:
         f = lambda v, p=3: f'{v:.{p}f}' if v is not None else '  -  '
         print(f'    {name:42s} Cd {f(cd)}  amp Cd {f(cda)}  amp Cl {f(cla)}  St {f(st)}')
-    with open(OUT / f'cilindro_Re{args.Re:g}.json', 'w', encoding='utf-8') as fh:
-        json.dump(results, fh, indent=2, ensure_ascii=False)
+    est = study_dir(OUT, f'cilindro_O_Re{args.Re:g}')
+    old = []
+    if (est / 'resultados.json').exists():          # acumula casos de execuções anteriores
+        old = json.load(open(est / 'resultados.json', encoding='utf-8'))
+    keep = {(r['NT'], r['Rext']): r for r in old + results}
+    with open(est / 'resultados.json', 'w', encoding='utf-8') as fh:
+        json.dump(sorted(keep.values(), key=lambda r: (r['Rext'], r['NT'])), fh, indent=2, ensure_ascii=False)
 
 
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print('\n  abortado pelo usuário (2º Ctrl+C); o último checkpoint *_parcial.npz foi mantido',
+        print('\n  abortado pelo usuário (2º Ctrl+C); o último checkpoint (parcial.npz na pasta do caso) foi mantido',
               flush=True)
         raise SystemExit(130)

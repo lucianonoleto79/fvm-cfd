@@ -3,7 +3,9 @@ Compara o efeito do tamanho do domínio: malha O (cylinder.py, raio R_ext) e dom
 retangular (cylinder_rect.py, [-Lu, Ld] x [-H, H]). Lê os .json dos resultados e gera
 tabela + figura.
 
-    python compare_domains.py --dir results/dominio --extra-O results/cilindro/NT128
+    python compare_domains.py            # lê results/estudo_cilindro_O_Re100 e _ret_Re100
+
+Saída em results/estudo_dominio_cilindro_Re100/.
 """
 import argparse
 import json
@@ -11,33 +13,37 @@ from pathlib import Path
 
 import numpy as np
 
+from casefiles import study_dir
 from cylinder import LITERATURE
 
 
-def load(dirs):
+def load(root, Re, NT, h):
+    """Casos da malha O com NT divisões e do retangular com núcleo h (os demais são outros
+    estudos: refinamento de malha)."""
     rows = []
-    for d in dirs:
-        for f in sorted(Path(d).glob('**/cilindro_Re*.json')):
-            for r in json.load(open(f, encoding='utf-8')):
-                if r.get('NT') == 128 or 'NT' not in r:
-                    rows.append(dict(r, malha='O', L=r['Rext'], label=f"O, R_ext = {r['Rext']:g} D"))
-        for f in sorted(Path(d).glob('**/cilindro_ret_Re*.json')):
-            for r in json.load(open(f, encoding='utf-8')):
-                rows.append(dict(r, L=r['H'], label=f"ret. {r['domain']}: [-{r['Lu']:g}, {r['Ld']:g}] × [±{r['H']:g}] D"))
-    uniq = {}
-    for r in rows:
-        uniq[(r['malha'], r['L'])] = r
-    return sorted(uniq.values(), key=lambda r: (r['malha'], r['L']))
+    f = Path(root) / f'estudo_cilindro_O_Re{Re:g}' / 'resultados.json'
+    if f.exists():
+        for r in json.load(open(f, encoding='utf-8')):
+            if r['NT'] == NT:
+                rows.append(dict(r, malha='O', L=r['Rext'], label=f"O, R_ext = {r['Rext']:g} D"))
+    f = Path(root) / f'estudo_cilindro_ret_Re{Re:g}' / 'resultados.json'
+    if f.exists():
+        for r in json.load(open(f, encoding='utf-8')):
+            if abs(r['h'] - h) < 1e-9:
+                rows.append(dict(r, L=r['H'],
+                                 label=f"ret. {r['domain']}: [-{r['Lu']:g}, {r['Ld']:g}] × [±{r['H']:g}] D"))
+    return sorted(rows, key=lambda r: (r['malha'], r['L']))
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--dir', nargs='+', default=['results/dominio'])
-    ap.add_argument('--extra-O', nargs='*', default=['results/cilindro/NT128'])
-    ap.add_argument('--out', default='results/dominio')
+    ap.add_argument('--results', default=str(Path(__file__).resolve().parent.parent / 'results'))
+    ap.add_argument('--Re', type=float, default=100)
+    ap.add_argument('--NT', type=int, default=128, help='malha O usada no estudo de domínio')
+    ap.add_argument('--h', type=float, default=0.025, help='núcleo do retangular usado no estudo')
     args = ap.parse_args()
-    rows = load(args.dir + args.extra_O)
-    out = Path(args.out)
+    rows = load(args.results, args.Re, args.NT, args.h)
+    out = study_dir(args.results, f'dominio_cilindro_Re{args.Re:g}')
     print(f"\n  {'caso':40s} {'volumes':>8s} {'Cd médio':>9s} {'amp Cd':>7s} {'amp Cl':>7s} {'St':>7s}")
     for r in rows:
         print(f"  {r['label']:40s} {r['cells']:8d} {r['Cd_mean']:9.4f} {r['Cd_amp']:7.4f} {r['Cl_amp']:7.4f} "
@@ -64,10 +70,10 @@ def main():
     axs[0].legend(fontsize=8)
     fig.suptitle('Cilindro, Re = 100 — efeito do tamanho do domínio', fontsize=12)
     fig.tight_layout()
-    fig.savefig(out / 'comparacao_dominios.png', dpi=120)
-    with open(out / 'comparacao_dominios.json', 'w', encoding='utf-8') as fh:
+    fig.savefig(out / 'comparacao.png', dpi=120)
+    with open(out / 'resultados.json', 'w', encoding='utf-8') as fh:
         json.dump(rows, fh, indent=2, ensure_ascii=False)
-    print(f'\n  figura: {out / "comparacao_dominios.png"}')
+    print(f'\n  figura: {out / "comparacao.png"}')
 
 
 if __name__ == '__main__':

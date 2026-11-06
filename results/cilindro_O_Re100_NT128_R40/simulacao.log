@@ -1,0 +1,33 @@
+
+=== Cilindro Re = 100: malha 128 x 128 = 16384 volumes;  R_ext = 40 D;  dr(parede) = 0.0174 D, r dtheta(parede) = 0.0245 D, dr(externo) = 1.346 D ===
+  malha: results/cilindro/NT128/cilindro_malha_NT128.png
+  dt = 0.00508, 29525 passos até t = 150
+    iter        t         Cd         Cl    it/s    tempo
+  ------------------------------------------------------
+  [controle] Ctrl+C interrompe e salva;  arquivos PAUSAR/SALVAR/PARAR em results/cilindro/NT128
+    2000   10.161    1.41191   -0.41707    82.0    24.4s
+    4000   20.322    1.34958   -0.00338    84.6    47.3s
+    6000   30.483    1.34500    0.29530    84.7    70.8s
+    8000   40.644    1.35160   -0.26880    86.9    92.1s
+   10000   50.805    1.33462   -0.02291    88.0   113.6s
+   12000   60.966    1.33884    0.29031    88.2   136.0s
+   14000   71.127    1.34809   -0.26996    88.8   157.6s
+   16000   81.288    1.33269   -0.01155    88.9   180.0s
+   18000   91.449    1.33640    0.28252    88.9   202.5s
+   20000  101.610    1.34726   -0.27917    88.3   226.5s
+   22000  111.771    1.33279    0.00865    87.9   250.2s
+   24000  121.931    1.33480    0.27135    87.7   273.6s
+   26000  132.092    1.34709   -0.28951    87.5   297.3s
+   28000  142.253    1.33360    0.03143    87.2   321.2s
+  [controle] checkpoint da it 29525 em results/cilindro/NT128/cilindro_Re100_NT128_parcial.npz (retome com --resume)
+   29525  150.001    1.34433   -0.32222    87.0   339.3s
+  -> concluída em 29525 iterações, 339.3 s
+
+  NT    NR   volumes   ciclos   Cd médio   amp Cd    amp Cl     St      tempo
+ 128   128    16384     11    1.3385   0.0094   0.3226   0.1637   339 s
+
+  Referências (confira nas fontes):
+    Braza, Chassaing & Ha Minh (1986)          Cd 1.364  amp Cd 0.015  amp Cl 0.250  St 0.160
+    Liu, Zheng & Sung (1998)                   Cd 1.350  amp Cd 0.012  amp Cl 0.339  St 0.164
+    Park, Kwon & Choi (1998)                   Cd 1.330  amp Cd   -    amp Cl 0.332  St 0.165
+    Williamson (1988), experimental, St(Re)    Cd   -    amp Cd   -    amp Cl   -    St 0.164

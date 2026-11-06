@@ -1,5 +1,10 @@
-# resultados gerados pelos scripts (figuras de referência ficam em docs/figures)
-results/
+# resultados: figuras, métricas (.json) e logs são versionados; campos e checkpoints não
+results/**/*.npz
+results/**/*.tmp
+results/**/parcial.png
+results/PAUSAR
+results/SALVAR
+results/PARAR
 
 # Python
 __pycache__/

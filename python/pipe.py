@@ -23,6 +23,7 @@ import numpy as np
 
 from fvm3d import Grid3D, SIMPLEC3D
 from control import add_control_args, clear_stale_commands, control_from_args, maybe_resume, save_checkpoint
+from casefiles import CaseDir, study_dir
 from monitor import add_monitor_args, monitor_from_args
 
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / 'results'
@@ -85,6 +86,82 @@ def analyze(s, Re, L):
                 fRe=float(f * Re), fRe_err_pct=float(100 * (f * Re - 64) / 64),
                 Le=float(Le), Le_durst=durst_entrance_length(Re),
                 Q_ratio=float(Q / (U * np.pi * R ** 2))), dict(zc=zc, wc=wc, pm=pm, sel=sel, dpdz=dpdz, kz=kz)
+
+
+def plot_domain(Re, L, fname):
+    """Domínio e condições de contorno do tubo (vista lateral e seção transversal)."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Circle, FancyArrowPatch, Rectangle
+    fig = plt.figure(figsize=(14, 5.2))
+    a = fig.add_axes([0.03, 0.12, 0.66, 0.76])
+    Ls = 10.0                                         # comprimento desenhado (fora de escala)
+    a.add_patch(Rectangle((0, -0.5), Ls, 1, color='#eaf1f8'))
+    a.plot([0, Ls], [0.5, 0.5], color='0.2', lw=3); a.plot([0, Ls], [-0.5, -0.5], color='0.2', lw=3)
+    for y in np.linspace(-0.4, 0.4, 7):
+        a.add_patch(FancyArrowPatch((-0.9, y), (-0.1, y), arrowstyle='-|>', mutation_scale=10, color='#1f6fb4'))
+    yy = np.linspace(-0.5, 0.5, 41)
+    a.plot(Ls + 0.3 + 0.6 * (1 - 4 * yy ** 2), yy, color='#c0392b', lw=2)
+    a.plot([Ls + 0.3] * 2, [-0.5, 0.5], color='#c0392b', lw=0.8)
+    kw = dict(fontsize=9.5, va='center')
+    a.text(-0.95, 0.85, 'ENTRADA (z = 0)\nperfil uniforme: w = U, u = v = 0', color='#1f6fb4', **kw)
+    a.text(Ls - 3.2, 0.85, 'SAÍDA (z = L)\ngradiente nulo ∂u/∂z = 0,\nvazão corrigida', color='#c0392b', **kw)
+    a.text(Ls / 2, -0.85, 'PAREDE (r = D/2): não deslizamento u = v = w = 0\n'
+           '(fronteira imersa na malha cartesiana)', ha='center', color='0.2', **kw)
+    a.text(Ls / 2, 0, f'Re = U D / ν = {Re:g}', ha='center', color='#2b5d8a', fontsize=12, va='center')
+    a.annotate('', (Ls, -1.3), (0, -1.3), arrowprops=dict(arrowstyle='<->', color='0.4'))
+    a.text(Ls / 2, -1.45, f'L = {L:g} D  (desenho fora de escala)', ha='center', fontsize=9, color='0.4')
+    a.set_xlim(-1.2, Ls + 1.4); a.set_ylim(-1.6, 1.2); a.set_aspect('equal'); a.axis('off')
+    a.set_title('Vista lateral (plano y = 0)', fontsize=10)
+    b = fig.add_axes([0.72, 0.12, 0.26, 0.76])
+    b.add_patch(Rectangle((-0.6, -0.6), 1.2, 1.2, fill=False, ls='--', color='0.5'))
+    b.add_patch(Circle((0, 0), R, color='#eaf1f8', ec='0.2', lw=3))
+    b.text(0, 0, 'fluido', ha='center', va='center', color='#2b5d8a')
+    b.text(0, -0.72, 'caixa da malha cartesiana\n(células fora do círculo: sólidas)', ha='center',
+           fontsize=8.5, color='0.4', va='top')
+    b.set_xlim(-0.8, 0.8); b.set_ylim(-1.0, 0.75); b.set_aspect('equal'); b.axis('off')
+    b.set_title('Seção transversal', fontsize=10)
+    fig.suptitle('Domínio e condições de contorno — tubo circular (3D)', fontsize=12)
+    fig.savefig(fname, dpi=110, bbox_inches='tight')
+    plt.close(fig)
+
+
+def plot_mesh(s, fname):
+    """Seção transversal (células fluidas/sólidas e parede real) e malha longitudinal."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import ListedColormap
+    from matplotlib.patches import Circle
+    g = s.g
+    fig, axs = plt.subplots(1, 2, figsize=(14, 5.6), gridspec_kw=dict(width_ratios=[1, 1.6]))
+    a = axs[0]
+    xf, yf = g.faces(0), g.faces(1)
+    fl = s.fluid[:, :, 0].astype(float)
+    a.pcolormesh(xf, yf, fl.T, cmap=ListedColormap(['#d9d9d9', '#cfe2f3']), edgecolors='#2b5d8a', lw=0.5)
+    a.add_patch(Circle((0, 0), R, fill=False, color='#c0392b', lw=2))
+    a.set_aspect('equal'); a.set_xlabel('x / D'); a.set_ylabel('y / D')
+    n = g.n[0] - 2
+    a.set_title(f'(a) seção: {g.n[0]} × {g.n[1]} células, {n} no diâmetro, h = D/{n}\n'
+                f'azul: fluido ({int(fl.sum())} células), cinza: sólido; vermelho: parede real',
+                fontsize=9.5)
+    b = axs[1]
+    zf = g.faces(2)
+    zmax = min(zf[-1], 3.0)
+    for z in zf[zf <= zmax + 1e-9]:
+        b.plot([z, z], [xf[0], xf[-1]], color='#2b5d8a', lw=0.5)
+    for x in xf:
+        b.plot([0, zmax], [x, x], color='#2b5d8a', lw=0.5)
+    b.plot([0, zmax], [R, R], color='#c0392b', lw=2); b.plot([0, zmax], [-R, -R], color='#c0392b', lw=2)
+    b.set_aspect('equal'); b.set_xlabel('z / D'); b.set_ylabel('x / D')
+    b.set_title(f'(b) plano y = 0, primeiros {zmax:g} D de {zf[-1]:g} D: Δz = {g.h[2]:.3f} D, '
+                f'{g.n[2]} células em z', fontsize=9.5)
+    fig.suptitle(f'Malha cartesiana uniforme {g.n[0]} × {g.n[1]} × {g.n[2]} = {np.prod(g.n):,} volumes'
+                 .replace(',', '.'), fontsize=12, y=1.04)
+    fig.tight_layout()
+    fig.savefig(fname, dpi=110, bbox_inches='tight')
+    plt.close(fig)
 
 
 def plot(s, res, aux, study, Re, fname):
@@ -195,36 +272,42 @@ def main():
     study, last = [], None
     old = {}
     if args.reanalyze:
-        with open(OUT / f'tubo_Re{args.Re:g}.json', encoding='utf-8') as f:
+        with open(study_dir(OUT, f'malha_tubo_Re{args.Re:g}') / 'resultados.json', encoding='utf-8') as f:
             old = {q['n']: q for q in json.load(f)}
     for n in args.n:
         s = build(n, args.Re, args.L, args.nz_per_D, tol=args.tol)
+        case = CaseDir(OUT, f'tubo_Re{args.Re:g}_n{n}')
+        plot_domain(args.Re, args.L, case.dominio)   # domínio e malha ANTES de simular
+        plot_mesh(s, case.malha)
         if args.reanalyze:
-            d = np.load(OUT / f'tubo_Re{args.Re:g}_n{n}.npz')
+            d = np.load(case.campos)
             s.V = [d['u'], d['v'], d['w']]; s.p = d['p']
             s.history = d['history'].tolist(); s.iter = len(s.history)
             s.converged, s.seconds = old[n]['converged'], old[n]['seconds']
         else:
             print(f'\n=== Tubo: Re = {args.Re:g}, {n} células no diâmetro, L = {args.L:g} D ===', flush=True)
-            case = f'tubo_Re{args.Re:g}_n{n}'
-            ckpt = OUT / f'{case}_parcial.npz'
-            maybe_resume(args, s, ckpt, final_file=OUT / f'{case}.npz')
-            mon = monitor_from_args(args, ['u', 'v', 'w', 'massa'], args.tol,
-                                    OUT / f'convergencia_{case}.png',
+            case.announce()
+            maybe_resume(args, s, case.parcial, final_file=case.campos)
+            mon = monitor_from_args(args, ['u', 'v', 'w', 'massa'], args.tol, case.convergencia,
                                     f'Tubo Re = {args.Re:g}, {n} células no diâmetro')
 
             def partial_fig(s, case=case):          # "salvar parcial": figura do campo atual
                 r, a = analyze(s, args.Re, args.L)
-                plot(s, r, a, study + [r], args.Re, OUT / f'{case}_parcial.png')
+                plot(s, r, a, [r], args.Re, case.parcial_png)
 
-            ctl = control_from_args(args, OUT, ckpt, on_save=partial_fig)
+            ctl = control_from_args(args, OUT, case.parcial, on_save=partial_fig)
             if not s.converged:                      # caso reaproveitado já está pronto
                 s.run(max_iter=args.max_iter, monitor=mon, control=ctl)
+            if mon.plot_file is None or not mon.plot_file.exists():
+                mon.plot_file = case.convergencia    # caso reaproveitado: refaz a curva
+                mon.start(s); mon.finish(s)
         res, aux = analyze(s, args.Re, args.L)
         study.append(res)
         last = (s, res, aux)
+        plot(s, res, aux, [res], args.Re, case.resultado())
+        case.save_json(res)
         if not args.reanalyze:
-            save_checkpoint(s, OUT / f'{case}.npz')  # u, v, w, p, history (+ iter, converged, seconds)
+            save_checkpoint(s, case.campos)          # u, v, w, p, history (+ iter, converged, seconds)
             if getattr(s, 'stopped', False):
                 pend = args.n[args.n.index(n) + 1:]
                 print(f'\n  simulação interrompida: resultados de n = {n} são parciais'
@@ -232,7 +315,8 @@ def main():
                       + '\n  continue com o mesmo comando + --resume', flush=True)
                 break
     s, res, aux = last
-    plot(s, res, aux, study, args.Re, OUT / f'tubo_Re{args.Re:g}.png')
+    est = study_dir(OUT, f'malha_tubo_Re{args.Re:g}')
+    plot(s, res, aux, study, args.Re, est / 'estudo_de_malha.png')
 
     print(f"\n  n     h      volumes  iter     w_c/2U-1   perfil RMS  perfil máx   f·Re    erro     "
           f"L/D (FVM)  L/D (Durst)  Q/Q0   tempo")
@@ -246,7 +330,7 @@ def main():
             e = np.abs([q[key] for q in study]); h = np.array([q['h'] for q in study])
             p = np.polyfit(np.log(h), np.log(e), 1)[0]
             print(f'  ordem observada ({key}): {p:.2f}')
-    with open(OUT / f'tubo_Re{args.Re:g}.json', 'w', encoding='utf-8') as f:
+    with open(est / 'resultados.json', 'w', encoding='utf-8') as f:
         json.dump(study, f, indent=2, ensure_ascii=False)
 
 
@@ -254,6 +338,6 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print('\n  abortado pelo usuário (2º Ctrl+C); o último checkpoint *_parcial.npz foi mantido',
+        print('\n  abortado pelo usuário (2º Ctrl+C); o último checkpoint (parcial.npz na pasta do caso) foi mantido',
               flush=True)
         raise SystemExit(130)

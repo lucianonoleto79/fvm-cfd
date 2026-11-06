@@ -68,7 +68,7 @@ def add_control_args(ap):
     g.add_argument('--checkpoint', type=float, default=300.0, metavar='S',
                    help='grava checkpoint a cada S segundos (0: só ao pedir/interromper; padrão 300)')
     g.add_argument('--resume', action='store_true',
-                   help='retoma cada caso do checkpoint *_parcial.npz, se existir')
+                   help='retoma cada caso do checkpoint parcial.npz da sua pasta, se existir')
     g.add_argument('--no-keys', action='store_true',
                    help='desliga os comandos pelo teclado (p/s/q)')
     g.add_argument('--control-dir', default=None,

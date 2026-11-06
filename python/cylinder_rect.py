@@ -26,10 +26,60 @@ from cartesian import CartesianGrid, CartesianIBNS, Cylinder
 from control import (add_control_args, clear_stale_commands, control_from_args,
                      maybe_resume, save_checkpoint)
 from cylinder import LITERATURE, pulse, stats
+from casefiles import CaseDir, study_dir
 from monitor import ConvergenceMonitor, add_monitor_args
 
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / 'results'
 DOMAINS = {'P': (10, 20, 10), 'M': (20, 40, 20), 'G': (40, 80, 40)}
+
+
+def plot_domain(g, fname, box=(-1.25, 1.25, -1.25, 1.25)):
+    """Domínio retangular e condições de contorno (em escala)."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Circle, FancyArrowPatch, Rectangle
+    x0, x1, y0, y1 = g.xf[0], g.xf[-1], g.yf[0], g.yf[-1]
+    W, H = x1 - x0, y1 - y0
+    fig, ax = plt.subplots(figsize=(12, 12 * H / W * 0.75 + 2.2))
+    ax.add_patch(Rectangle((x0, y0), W, H, color='#f4f8fc', zorder=0))
+    ax.plot([x0, x0], [y0, y1], color='#1f6fb4', lw=5)
+    ax.plot([x1, x1], [y0, y1], color='#c0392b', lw=5)
+    ax.plot([x0, x1], [y1, y1], color='#7d7d7d', lw=4, ls='--')
+    ax.plot([x0, x1], [y0, y0], color='#7d7d7d', lw=4, ls='--')
+    for y in np.linspace(y0 + 0.15 * H, y1 - 0.15 * H, 5):
+        ax.add_patch(FancyArrowPatch((x0 - 0.09 * W, y), (x0 - 0.01 * W, y), arrowstyle='-|>',
+                                     mutation_scale=14, color='#1f6fb4', clip_on=False))
+    ax.add_patch(Circle((0, 0), 0.5 * max(1.0, 0.012 * W), color='0.15', zorder=3))
+    ax.add_patch(Rectangle((-1.5, -1.5), 3, 3, fill=False, ec='#2e8a4e', lw=1.2, ls=':'))
+    kw = dict(fontsize=10, va='center')
+    ax.text(x0 + 0.02 * W, y1 - 0.08 * H, 'ENTRADA (x = −Lu): u = U, v = 0  (Dirichlet)', color='#1f6fb4', **kw)
+    ax.text(x1 - 0.02 * W, y1 - 0.08 * H, 'SAÍDA (x = Ld): convectiva\n∂u/∂t + U ∂u/∂x = 0, vazão corrigida',
+            color='#c0392b', ha='right', **kw)
+    ax.text(0.5 * (x0 + x1), y1 + 0.04 * H, 'LATERAL (y = +H): deslizamento livre  v = 0, ∂u/∂y = 0',
+            color='0.35', ha='center', **kw)
+    ax.text(0.5 * (x0 + x1), y0 - 0.04 * H, 'LATERAL (y = −H): deslizamento livre  v = 0, ∂u/∂y = 0',
+            color='0.35', ha='center', **kw)
+    ax.annotate('CILINDRO (D = 1, na origem): não deslizamento por fronteira imersa\n'
+                '(gira brevemente para t < 2 para disparar a emissão)\n'
+                f'forças: balanço de quantidade de movimento na caixa [{box[0]:g}, {box[1]:g}]²\n'
+                '(pontilhado verde: núcleo uniforme da malha, [-1,5; 1,5]²)',
+                xy=(0, 0), xytext=(x0 + 0.04 * W, y0 + 0.12 * H), fontsize=9.5,
+                arrowprops=dict(arrowstyle='->', color='0.2'))
+    ax.annotate('', (0, y0 - 0.1 * H), (x0, y0 - 0.1 * H), arrowprops=dict(arrowstyle='<->', color='0.4'))
+    ax.annotate('', (x1, y0 - 0.1 * H), (0, y0 - 0.1 * H), arrowprops=dict(arrowstyle='<->', color='0.4'))
+    ax.text(x0 / 2, y0 - 0.14 * H, f'Lu = {-x0:g} D', ha='center', fontsize=9, color='0.4')
+    ax.text(x1 / 2, y0 - 0.14 * H, f'Ld = {x1:g} D', ha='center', fontsize=9, color='0.4')
+    ax.axvline(0, ymin=0.08, ymax=0.92, color='0.85', lw=0.8, zorder=0)
+    ax.annotate('', (x1 + 0.03 * W, y1), (x1 + 0.03 * W, y0), arrowprops=dict(arrowstyle='<->', color='0.4'))
+    ax.text(x1 + 0.04 * W, 0, f'2H = {H:g} D\nbloqueio\nD/2H = {100 / H:.2g} %', fontsize=9, color='0.4',
+            va='center')
+    ax.set_xlim(x0 - 0.12 * W, x1 + 0.14 * W); ax.set_ylim(y0 - 0.18 * H, y1 + 0.1 * H)
+    ax.set_aspect('equal'); ax.axis('off')
+    ax.set_title('Domínio retangular e condições de contorno (em escala; cilindro ampliado se pequeno demais)',
+                 fontsize=11)
+    fig.savefig(fname, dpi=110, bbox_inches='tight')
+    plt.close(fig)
 
 
 def plot_mesh(g, fname):
@@ -133,35 +183,37 @@ def main():
         Lu, Ld, H = DOMAINS[dom] if dom in DOMAINS else map(float, dom.split(','))
         g = CartesianGrid.for_cylinder(Lu, Ld, H, h=args.h)
         tag = f'{dom}' if dom in DOMAINS else f'{Lu:g}_{Ld:g}_{H:g}'
-        case = f'cilindro_ret_{tag}_h{args.h:g}'
+        case = CaseDir(OUT, f'cilindro_ret_Re{args.Re:g}_{tag}_h{args.h:.4g}')
         print(f'\n=== Cilindro Re = {args.Re:g}, domínio {tag}: {g.describe()} ===', flush=True)
-        plot_mesh(g, OUT / f'malha_ret_{tag}.png')
+        plot_domain(g, case.dominio)                 # domínio e malha ANTES de simular
+        plot_mesh(g, case.malha)
+        case.announce()
         if args.mesh_only:
             continue
         s = CartesianIBNS(g, Cylinder(0.5, pulse), Re=args.Re, cfl=args.cfl)
         n_steps = int(round(args.T / s.dt))
         print(f'  dt = {s.dt:.5f}, {n_steps} passos; nós fantasmas u/v = {len(s.u_rows)}/{len(s.v_rows)}',
               flush=True)
-        ckpt = OUT / f'{case}_parcial.npz'
-        maybe_resume(args, s, ckpt)
+        maybe_resume(args, s, case.parcial)
         t_from = args.stats_from if args.stats_from is not None else args.T / 2
         mon = ConvergenceMonitor(['Cd', 'Cl'], report=args.report,
-                                 plot_file=None if args.no_curve else OUT / f'forcas_{case}.png',
+                                 plot_file=None if args.no_curve else case.convergencia,
                                  live=args.live, refresh=args.refresh, logy=False, ylabel='coeficiente',
                                  dt=s.dt, title=f'Cilindro retangular {tag}')
 
         def partial(s, case=case):
-            plot_case(s, stats(s, min(t_from, s.t / 2)) if s.iter > 10 else None, OUT / f'{case}_parcial.png')
+            plot_case(s, stats(s, min(t_from, s.t / 2)) if s.iter > 10 else None, case.parcial_png)
 
-        s.run(n_steps, monitor=mon, control=control_from_args(args, OUT, ckpt, on_save=partial))
+        s.run(n_steps, monitor=mon, control=control_from_args(args, OUT, case.parcial, on_save=partial))
         res = stats(s, min(t_from, s.t / 2))
         res.update(malha='retangular', domain=tag, Lu=Lu, Ld=Ld, H=H, blockage=0.5 / H, h=args.h,
                    NX=g.NX, NY=g.NY, cells=g.cells, dt=s.dt, t=s.t, steps=s.iter, cfl=s.cfl(),
                    seconds=round(getattr(s, 'seconds_total', 0.0), 1),
                    interrompido=bool(getattr(s, 'stopped', False)))
         results.append(res)
-        plot_case(s, res, OUT / f'{case}.png')
-        save_checkpoint(s, OUT / f'{case}.npz')
+        plot_case(s, res, case.resultado())
+        case.save_json(res)
+        save_checkpoint(s, case.campos)
         if getattr(s, 'stopped', False):
             print('\n  simulação interrompida: continue com o mesmo comando + --resume', flush=True)
             break
@@ -177,14 +229,19 @@ def main():
     for name, cd, cda, cla, st in LITERATURE:
         f = lambda v: f'{v:.3f}' if v is not None else '  -  '
         print(f'    {name:42s} Cd {f(cd)}  amp Cd {f(cda)}  amp Cl {f(cla)}  St {f(st)}')
-    with open(OUT / f'cilindro_ret_Re{args.Re:g}.json', 'w', encoding='utf-8') as fh:
-        json.dump(results, fh, indent=2, ensure_ascii=False)
+    est = study_dir(OUT, f'cilindro_ret_Re{args.Re:g}')
+    old = []
+    if (est / 'resultados.json').exists():          # acumula casos de execuções anteriores
+        old = json.load(open(est / 'resultados.json', encoding='utf-8'))
+    keep = {(r['domain'], r['h']): r for r in old + results}
+    with open(est / 'resultados.json', 'w', encoding='utf-8') as fh:
+        json.dump(sorted(keep.values(), key=lambda r: (r['H'], -r['h'])), fh, indent=2, ensure_ascii=False)
 
 
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print('\n  abortado pelo usuário (2º Ctrl+C); o último checkpoint *_parcial.npz foi mantido',
+        print('\n  abortado pelo usuário (2º Ctrl+C); o último checkpoint (parcial.npz na pasta do caso) foi mantido',
               flush=True)
         raise SystemExit(130)

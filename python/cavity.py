@@ -36,6 +36,7 @@ import scipy.sparse.linalg as spla
 
 import ghia
 from control import add_control_args, clear_stale_commands, control_from_args, maybe_resume, run_loop, save_checkpoint
+from casefiles import CaseDir, study_dir
 from monitor import ConvergenceMonitor, add_monitor_args, monitor_from_args
 
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / 'results'
@@ -251,6 +252,75 @@ class CavitySolver:
 
 
 # -------------------------------------------------------------- gráficos
+def plot_domain(Re, fname):
+    """Domínio e condições de contorno da cavidade."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import FancyArrowPatch, Rectangle
+    fig, ax = plt.subplots(figsize=(7.5, 7))
+    ax.add_patch(Rectangle((0, 0), 1, 1, fill=False, lw=3, color='0.2'))
+    ax.plot([0, 1], [1, 1], color='#c0392b', lw=5)
+    for x in np.linspace(0.15, 0.85, 5):
+        ax.add_patch(FancyArrowPatch((x - 0.07, 1.06), (x + 0.07, 1.06), arrowstyle='-|>',
+                                     mutation_scale=14, color='#c0392b'))
+    ax.text(0.5, 1.13, 'TAMPA (y = 1): u = U = 1, v = 0  (desliza para a direita)',
+            ha='center', color='#c0392b', fontsize=10)
+    kw = dict(fontsize=10, color='0.2', ha='center', va='center')
+    ax.text(-0.08, 0.5, 'parede\nu = v = 0', rotation=90, **kw)
+    ax.text(1.08, 0.5, 'parede\nu = v = 0', rotation=-90, **kw)
+    ax.text(0.5, -0.07, 'parede (fundo): u = v = 0', **kw)
+    ax.text(0.5, 0.5, f'Re = U L / ν = {Re}\nfluido incompressível\nρ = 1, L = 1', fontsize=12,
+            ha='center', va='center', color='#2b5d8a')
+    ax.text(0.5, 0.2, 'pressão: ∂p\'/∂n = 0 nas paredes (SIMPLEC)\nnível de p fixado pela média nula',
+            fontsize=9, ha='center', color='0.35')
+    ax.annotate('', (1, -0.15), (0, -0.15), arrowprops=dict(arrowstyle='<->', color='0.4'))
+    ax.text(0.5, -0.19, 'L = 1', ha='center', fontsize=9, color='0.4')
+    ax.set_xlim(-0.2, 1.2); ax.set_ylim(-0.25, 1.22); ax.set_aspect('equal'); ax.axis('off')
+    ax.set_title('Domínio e condições de contorno — cavidade com tampa deslizante', fontsize=11)
+    fig.savefig(fname, dpi=110, bbox_inches='tight')
+    plt.close(fig)
+
+
+def plot_mesh(N, fname):
+    """Malha uniforme N x N e o arranjo desencontrado (zoom no canto da tampa)."""
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import LineCollection
+    fig, axs = plt.subplots(1, 2, figsize=(13, 6.3))
+    every = max(1, N // 64)
+    f = np.linspace(0, 1, N + 1)
+    segs = [[(x, 0), (x, 1)] for x in f[::every]] + [[(0, y), (1, y)] for y in f[::every]]
+    axs[0].add_collection(LineCollection(segs, colors='#2b5d8a', linewidths=0.35))
+    axs[0].set_title(f'(a) malha uniforme {N} × {N} = {N * N} volumes'
+                     + (f'\n(1 de cada {every} linhas)' if every > 1 else ''), fontsize=10)
+    axs[0].set_xlim(-0.02, 1.02); axs[0].set_ylim(-0.02, 1.02)
+    # zoom: 4 x 4 células no canto superior esquerdo
+    a, h, k = axs[1], 1.0 / N, 4
+    fz = np.arange(k + 1) * h
+    segs = [[(x, 1 - k * h), (x, 1)] for x in fz] + [[(0, 1 - y), (k * h, 1 - y)] for y in fz]
+    a.add_collection(LineCollection(segs, colors='#2b5d8a', linewidths=1.0))
+    xc = (np.arange(k) + 0.5) * h
+    yc = 1 - (np.arange(k) + 0.5) * h
+    X, Y = np.meshgrid(xc, yc)
+    a.plot(X.ravel(), Y.ravel(), 'ko', ms=5, ls='', label='p (centro)')
+    Xu, Yu = np.meshgrid(fz, yc)
+    a.plot(Xu.ravel(), Yu.ravel(), '>', color='#c0392b', ms=7, ls='', label='u (faces verticais)')
+    Xv, Yv = np.meshgrid(xc, 1 - fz)
+    a.plot(Xv.ravel(), Yv.ravel(), '^', color='#2e8a4e', ms=7, ls='', label='v (faces horizontais)')
+    a.plot([0, k * h], [1, 1], color='#c0392b', lw=4)
+    a.set_xlim(-0.3 * h, (k + 0.3) * h); a.set_ylim(1 - (k + 0.3) * h, 1 + 0.6 * h)
+    a.set_title(f'(b) canto da tampa: arranjo desencontrado, h = 1/{N}', fontsize=10)
+    a.legend(loc='upper left', bbox_to_anchor=(1.02, 1), fontsize=8)
+    for ax in axs:
+        ax.set_aspect('equal'); ax.set_xlabel('x'); ax.set_ylabel('y')
+    fig.suptitle('Malha — cavidade com tampa deslizante', fontsize=12)
+    fig.tight_layout()
+    fig.savefig(fname, dpi=110, bbox_inches='tight')
+    plt.close(fig)
+
+
 def plot_case(s, fname):
     import matplotlib
     matplotlib.use('Agg')
@@ -314,31 +384,39 @@ def main():
 
     if args.replot:
         for Re in args.Re:
-            d = np.load(OUT / f'cavidade_Re{Re}_N{args.N}.npz')
+            case = CaseDir(OUT, f'cavidade_Re{Re}_N{args.N}')
+            d = np.load(case.campos)
             s = CavitySolver(Re=Re, N=args.N)
             s.u, s.v, s.p, s.history = d['u'], d['v'], d['p'], d['history'].tolist()
-            plot_case(s, OUT / f'cavidade_Re{Re}_N{args.N}.png')
+            plot_domain(Re, case.dominio)
+            plot_mesh(args.N, case.malha)
+            plot_case(s, case.resultado())
         return
 
     results = []
     for Re in args.Re:
         print(f'\n=== Re = {Re}, malha {args.N}x{args.N} ===', flush=True)
         s = CavitySolver(Re=Re, N=args.N, alpha_u=args.alpha, tol=args.tol)
-        case = f'cavidade_Re{Re}_N{args.N}'
-        ckpt = OUT / f'{case}_parcial.npz'
-        maybe_resume(args, s, ckpt, final_file=OUT / f'{case}.npz')
-        mon = monitor_from_args(args, ['u', 'v', 'massa'], args.tol,
-                                OUT / f'convergencia_{case}.png',
+        case = CaseDir(OUT, f'cavidade_Re{Re}_N{args.N}')
+        plot_domain(Re, case.dominio)                # domínio e malha ANTES de simular
+        plot_mesh(args.N, case.malha)
+        case.announce()
+        maybe_resume(args, s, case.parcial, final_file=case.campos)
+        mon = monitor_from_args(args, ['u', 'v', 'massa'], args.tol, case.convergencia,
                                 f'Cavidade Re = {Re}, {args.N}x{args.N}')
         # "salvar parcial" grava, além do checkpoint, a figura do campo atual
-        ctl = control_from_args(args, OUT, ckpt,
-                                on_save=lambda s: plot_case(s, OUT / f'{case}_parcial.png'))
+        ctl = control_from_args(args, OUT, case.parcial,
+                                on_save=lambda s, case=case: plot_case(s, case.parcial_png))
         if not s.converged:                          # caso reaproveitado já está pronto
             s.run(max_iter=args.max_iter, monitor=mon, control=ctl)
         r = s.compare_ghia()
         results.append(r)
-        plot_case(s, OUT / f'{case}.png')
-        save_checkpoint(s, OUT / f'{case}.npz')      # u, v, p, history (+ iter, converged, seconds)
+        plot_case(s, case.resultado())
+        if mon.plot_file is None or not mon.plot_file.exists():
+            mon.plot_file = case.convergencia        # caso reaproveitado: refaz a curva
+            mon.start(s); mon.finish(s)
+        save_checkpoint(s, case.campos)              # u, v, p, history (+ iter, converged, seconds)
+        case.save_json(r)
         if getattr(s, 'stopped', False):
             pend = [x for x in args.Re if x not in [q['Re'] for q in results]]
             print(f'\n  simulação interrompida: resultados de Re = {Re} são parciais'
@@ -357,7 +435,7 @@ def main():
               f"{r['v_max_clean']:.4f}  {r['seconds']:.0f} s")
     print('* v_max* exclui o ponto suspeito de Ghia (Re = 400, x = 0,9063);  '
           'conv = int: interrompida pelo usuário (resultado parcial)')
-    with open(OUT / f'resultados_N{args.N}.json', 'w', encoding='utf-8') as f:
+    with open(study_dir(OUT, f'cavidade_N{args.N}') / 'resultados.json', 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
 
 
@@ -365,6 +443,6 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print('\n  abortado pelo usuário (2º Ctrl+C); o último checkpoint *_parcial.npz foi mantido',
+        print('\n  abortado pelo usuário (2º Ctrl+C); o último checkpoint (parcial.npz na pasta do caso) foi mantido',
               flush=True)
         raise SystemExit(130)

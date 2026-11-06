@@ -1,0 +1,35 @@
+
+=== Cilindro Re = 100, domínio P: 347 x 236 = 81892 volumes;  domínio [-10, 20] x [-10, 10] D;  h(núcleo) = 0.0250 D, h(máx) = 0.554 D ===
+  dt = 0.00437, 34286 passos; nós fantasmas u/v = 110/110
+    iter        t         Cd         Cl    it/s    tempo
+  ------------------------------------------------------
+  [controle] Ctrl+C interrompe e salva;  arquivos PAUSAR/SALVAR/PARAR em results/dominio/ret_P
+    2000    8.750    1.36738   -0.26629    12.4   160.7s
+    4000   17.500    1.35898    0.20951    12.9   309.1s
+    6000   26.250    1.34974   -0.18930    13.2   455.5s
+    8000   35.000    1.34642    0.17448    13.4   598.7s
+   10000   43.750    1.34539   -0.16038    13.4   743.6s
+   12000   52.500    1.34500    0.14648    13.5   887.9s
+   14000   61.250    1.34487   -0.13227    13.6  1029.6s
+   16000   70.000    1.34488    0.11774    13.6  1174.5s
+   18000   78.750    1.34498   -0.10295    13.7  1315.6s
+   20000   87.500    1.34518    0.08792    13.7  1457.7s
+   22000   96.250    1.34545   -0.07270    13.7  1610.0s
+   24000  105.000    1.34580    0.05731    13.7  1757.0s
+   26000  113.750    1.34623   -0.04180    13.7  1902.2s
+   28000  122.500    1.34672    0.02620    13.7  2045.8s
+   30000  131.250    1.34728   -0.01055    13.7  2186.3s
+   32000  140.000    1.34789   -0.00512    13.7  2327.8s
+   34000  148.750    1.34856    0.02077    13.8  2466.5s
+  [controle] checkpoint da it 34286 em results/dominio/ret_P/cilindro_ret_P_h0.025_parcial.npz (retome com --resume)
+   34286  150.001    1.35492   -0.31222    13.8  2486.5s
+  -> concluída em 34286 iterações, 2486.5 s
+
+  domínio            volumes  bloqueio  ciclos  Cd médio  amp Cd   amp Cl    St      tempo
+  P                   81892    5.00 %    12   1.3536   0.0088  0.3257  0.1706  2486 s
+
+  Referências (confira nas fontes):
+    Braza, Chassaing & Ha Minh (1986)          Cd 1.364  amp Cd 0.015  amp Cl 0.250  St 0.160
+    Liu, Zheng & Sung (1998)                   Cd 1.350  amp Cd 0.012  amp Cl 0.339  St 0.164
+    Park, Kwon & Choi (1998)                   Cd 1.330  amp Cd   -    amp Cl 0.332  St 0.165
+    Williamson (1988), experimental, St(Re)    Cd   -    amp Cd   -    amp Cl   -    St 0.164
