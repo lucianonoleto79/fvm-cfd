@@ -85,7 +85,7 @@ def plot_mesh(g, fname, title=''):
     fig.suptitle(title or f'Malha O: {g.NR} (radial) × {g.NT} (angular) = {g.cells} volumes',
                  fontsize=12)
     fig.tight_layout()
-    fig.savefig(fname, dpi=150, bbox_inches='tight')
+    fig.savefig(fname, dpi=110, bbox_inches='tight')
     plt.close(fig)
 
 
