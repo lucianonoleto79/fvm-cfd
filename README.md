@@ -419,7 +419,10 @@ python python/paranoa.py --apenas-malha           # só domínio e malha
 Em 7 dias (336 passos, 3 s): C/C0 média no lago 0,0056, 0,0020 na sonda do braço do Riacho
 Fundo, vazão na barragem 8,50 m³/s e massa do poluente conservada a 4×10⁻¹⁶. **Parâmetros
 ilustrativos, não calibrados** (sem vento, Coriolis, atrito, batimetria nem estratificação);
-não foi feito estudo de malha. A comparação com o Cordel e com o modelo de água rasa
+não foi feito estudo de malha.
+Em 365 dias (`--dias 365`; 17 520 passos, 2 min 52 s): C/C0 = 1,0 no braço do Riacho Fundo,
+0,220 no Braço Sul, 0,128 no corpo central, 0,024 na barragem e 0 no Braço Norte, praticamente
+iguais aos do Cordel; massa conservada a 2×10⁻¹⁶ (pasta [`results/paranoa_365d_h80/`](results/paranoa_365d_h80/)). A comparação com o Cordel e com o modelo de água rasa
 ([paranoa_agua_rasa](https://github.com/lucianonoleto79/paranoa_agua_rasa)), com sugestões de
 tópicos para um trabalho de disciplina, está em
 [`results/estudo_comparacao_paranoa/`](results/estudo_comparacao_paranoa/) (cópia do relatório do
