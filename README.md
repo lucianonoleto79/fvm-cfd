@@ -32,7 +32,8 @@ fvm-cfd/
 │   ├── cartesian.py     malha cartesiana esticada + fronteira imersa (domínio retangular)
 │   ├── cylinder_rect.py cilindro em domínio retangular (tamanhos P, M, G)
 │   ├── compare_domains.py  efeito do tamanho do domínio: malha O x retangular
-│   └── pipe.py          validação 3D: tubo circular
+│   ├── pipe.py          validação 3D: tubo circular
+│   └── paranoa.py       Lago Paranoá: poluente (escalar) — o caso `paranoa` do Cordel em VF
 ├── web/                 versão JavaScript (roda no navegador / GitHub Pages)
 │   ├── index.html  fvm.js  ghia.js
 │   └── serve.ps1        servidor local em PowerShell (alternativa: python -m http.server)
@@ -72,26 +73,27 @@ Tabela mantida automaticamente: cada script, ao terminar (ou interromper) um cas
 `results/estudo_*`.
 
 <!-- casos:inicio (tabela gerada por python/casefiles.py; não edite à mão) -->
-_16 casos em `results/`, atualizado em 2026-11-06 18:17._
+_17 casos em `results/`, atualizado em 2026-11-25 13:14._
 
 | caso | tipo | malha | resultados principais | situação | tempo | data | figuras |
 |---|---|---|---|---|---:|---|---|
-| [`cavidade_Re1000_N128`](cavidade_Re1000_N128/) | Cavidade, Re = 1000 | 128 × 128 | ψ_min = −0,11727 (Ghia −0,11793, erro 0,56 %); 1570 iterações | convergiu | 4 min | — | [domínio](cavidade_Re1000_N128/01_dominio.png) · [malha](cavidade_Re1000_N128/02_malha.png) · [convergência](cavidade_Re1000_N128/03_convergencia.png) · [resultados](cavidade_Re1000_N128/04_resultados.png) |
-| [`cavidade_Re100_N128`](cavidade_Re100_N128/) | Cavidade, Re = 100 | 128 × 128 | ψ_min = −0,10337 (Ghia −0,10342, erro 0,05 %); 2048 iterações | convergiu | 6 min | — | [domínio](cavidade_Re100_N128/01_dominio.png) · [malha](cavidade_Re100_N128/02_malha.png) · [convergência](cavidade_Re100_N128/03_convergencia.png) · [resultados](cavidade_Re100_N128/04_resultados.png) |
-| [`cavidade_Re400_N128`](cavidade_Re400_N128/) | Cavidade, Re = 400 | 128 × 128 | ψ_min = −0,11343 (Ghia −0,11391, erro 0,42 %); 1583 iterações | convergiu | 4 min | — | [domínio](cavidade_Re400_N128/01_dominio.png) · [malha](cavidade_Re400_N128/02_malha.png) · [convergência](cavidade_Re400_N128/03_convergencia.png) · [resultados](cavidade_Re400_N128/04_resultados.png) |
-| [`cilindro_O_Re100_NT128_R10`](cilindro_O_Re100_NT128_R10/) | Cilindro, malha O, Re = 100, R_ext = 10 D | 88 × 128 (11.264 volumes) | Cd = 1,3744, Cl = ±0,3450, St = 0,1660 (12 ciclos) | concluído | 3 min | — | [domínio](cilindro_O_Re100_NT128_R10/01_dominio.png) · [malha](cilindro_O_Re100_NT128_R10/02_malha.png) · [convergência](cilindro_O_Re100_NT128_R10/03_convergencia.png) · [resultados](cilindro_O_Re100_NT128_R10/04_resultados.png) |
-| [`cilindro_O_Re100_NT128_R20`](cilindro_O_Re100_NT128_R20/) | Cilindro, malha O, Re = 100, R_ext = 20 D | 108 × 128 (13.824 volumes) | Cd = 1,3506, Cl = ±0,3269, St = 0,1646 (11 ciclos) | concluído | 4 min | — | [domínio](cilindro_O_Re100_NT128_R20/01_dominio.png) · [malha](cilindro_O_Re100_NT128_R20/02_malha.png) · [convergência](cilindro_O_Re100_NT128_R20/03_convergencia.png) · [resultados](cilindro_O_Re100_NT128_R20/04_resultados.png) |
-| [`cilindro_O_Re100_NT128_R40`](cilindro_O_Re100_NT128_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 128 × 128 (16.384 volumes) | Cd = 1,3385, Cl = ±0,3226, St = 0,1637 (11 ciclos) | concluído | 6 min | — | [domínio](cilindro_O_Re100_NT128_R40/01_dominio.png) · [malha](cilindro_O_Re100_NT128_R40/02_malha.png) · [convergência](cilindro_O_Re100_NT128_R40/03_convergencia.png) · [resultados](cilindro_O_Re100_NT128_R40/04_resultados.png) |
-| [`cilindro_O_Re100_NT128_R80`](cilindro_O_Re100_NT128_R80/) | Cilindro, malha O, Re = 100, R_ext = 80 D | 148 × 128 (18.944 volumes) | Cd = 1,3345, Cl = ±0,3206, St = 0,1634 (11 ciclos) | concluído | 5 min | — | [domínio](cilindro_O_Re100_NT128_R80/01_dominio.png) · [malha](cilindro_O_Re100_NT128_R80/02_malha.png) · [convergência](cilindro_O_Re100_NT128_R80/03_convergencia.png) · [resultados](cilindro_O_Re100_NT128_R80/04_resultados.png) |
-| [`cilindro_O_Re100_NT192_R40`](cilindro_O_Re100_NT192_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 192 × 192 (36.864 volumes) | Cd = 1,3353, Cl = ±0,3234, St = 0,1641 (11 ciclos) | concluído | 24 min | — | [domínio](cilindro_O_Re100_NT192_R40/01_dominio.png) · [malha](cilindro_O_Re100_NT192_R40/02_malha.png) · [convergência](cilindro_O_Re100_NT192_R40/03_convergencia.png) · [resultados](cilindro_O_Re100_NT192_R40/04_resultados.png) |
-| [`cilindro_O_Re100_NT256_R40`](cilindro_O_Re100_NT256_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 256 × 256 (65.536 volumes) | Cd = 1,3336, Cl = ±0,3234, St = 0,1643 (11 ciclos) | concluído | 63 min | — | [domínio](cilindro_O_Re100_NT256_R40/01_dominio.png) · [malha](cilindro_O_Re100_NT256_R40/02_malha.png) · [convergência](cilindro_O_Re100_NT256_R40/03_convergencia.png) · [resultados](cilindro_O_Re100_NT256_R40/04_resultados.png) |
-| [`cilindro_ret_Re100_G_h0.025`](cilindro_ret_Re100_G_h0.025/) | Cilindro, retangular G, Re = 100, [−40, 80] × [±40] D | 447 × 308, h = D/40 (137.676 volumes) | Cd = 1,3009, Cl = ±0,3106, St = 0,1657 (12 ciclos) | concluído | 76 min | — | [domínio](cilindro_ret_Re100_G_h0.025/01_dominio.png) · [malha](cilindro_ret_Re100_G_h0.025/02_malha.png) · [convergência](cilindro_ret_Re100_G_h0.025/03_convergencia.png) · [resultados](cilindro_ret_Re100_G_h0.025/04_resultados.png) |
-| [`cilindro_ret_Re100_M_h0.025`](cilindro_ret_Re100_M_h0.025/) | Cilindro, retangular M, Re = 100, [−20, 40] × [±20] D | 387 × 268, h = D/40 (103.716 volumes) | Cd = 1,3168, Cl = ±0,3167, St = 0,1671 (12 ciclos) | concluído | 55 min | — | [domínio](cilindro_ret_Re100_M_h0.025/01_dominio.png) · [malha](cilindro_ret_Re100_M_h0.025/02_malha.png) · [convergência](cilindro_ret_Re100_M_h0.025/03_convergencia.png) · [resultados](cilindro_ret_Re100_M_h0.025/04_resultados.png) |
-| [`cilindro_ret_Re100_M_h0.03333`](cilindro_ret_Re100_M_h0.03333/) | Cilindro, retangular M, Re = 100, [−20, 40] × [±20] D | 341 × 226, h = D/30 (77.066 volumes) | Cd = 1,2863, Cl = ±0,3020, St = 0,1679 (12 ciclos) | concluído | 29 min | — | [domínio](cilindro_ret_Re100_M_h0.03333/01_dominio.png) · [malha](cilindro_ret_Re100_M_h0.03333/02_malha.png) · [convergência](cilindro_ret_Re100_M_h0.03333/03_convergencia.png) · [resultados](cilindro_ret_Re100_M_h0.03333/04_resultados.png) |
-| [`cilindro_ret_Re100_P_h0.025`](cilindro_ret_Re100_P_h0.025/) | Cilindro, retangular P, Re = 100, [−10, 20] × [±10] D | 347 × 236, h = D/40 (81.892 volumes) | Cd = 1,3536, Cl = ±0,3257, St = 0,1706 (12 ciclos) | concluído | 41 min | — | [domínio](cilindro_ret_Re100_P_h0.025/01_dominio.png) · [malha](cilindro_ret_Re100_P_h0.025/02_malha.png) · [convergência](cilindro_ret_Re100_P_h0.025/03_convergencia.png) · [resultados](cilindro_ret_Re100_P_h0.025/04_resultados.png) |
-| [`tubo_Re100_n11`](tubo_Re100_n11/) | Tubo 3D, Re = 100 | 11 células no D (33.800 volumes) | f·Re = 63,16 (erro −1,32 %); L/D = 6,15 (Durst 5,77) | convergiu | 11 s | — | [domínio](tubo_Re100_n11/01_dominio.png) · [malha](tubo_Re100_n11/02_malha.png) · [convergência](tubo_Re100_n11/03_convergencia.png) · [resultados](tubo_Re100_n11/04_resultados.png) |
-| [`tubo_Re100_n15`](tubo_Re100_n15/) | Tubo 3D, Re = 100 | 15 células no D (57.800 volumes) | f·Re = 63,52 (erro −0,74 %); L/D = 5,97 (Durst 5,77) | convergiu | 25 s | — | [domínio](tubo_Re100_n15/01_dominio.png) · [malha](tubo_Re100_n15/02_malha.png) · [convergência](tubo_Re100_n15/03_convergencia.png) · [resultados](tubo_Re100_n15/04_resultados.png) |
-| [`tubo_Re100_n21`](tubo_Re100_n21/) | Tubo 3D, Re = 100 | 21 células no D (105.800 volumes) | f·Re = 63,80 (erro −0,32 %); L/D = 5,88 (Durst 5,77) | convergiu | 1 min | — | [domínio](tubo_Re100_n21/01_dominio.png) · [malha](tubo_Re100_n21/02_malha.png) · [convergência](tubo_Re100_n21/03_convergencia.png) · [resultados](tubo_Re100_n21/04_resultados.png) |
+| [`cavidade_Re1000_N128`](results/cavidade_Re1000_N128/) | Cavidade, Re = 1000 | 128 × 128 | ψ_min = −0,11727 (Ghia −0,11793, erro 0,56 %); 1570 iterações | convergiu | 4 min | — | [domínio](results/cavidade_Re1000_N128/01_dominio.png) · [malha](results/cavidade_Re1000_N128/02_malha.png) · [convergência](results/cavidade_Re1000_N128/03_convergencia.png) · [resultados](results/cavidade_Re1000_N128/04_resultados.png) |
+| [`cavidade_Re100_N128`](results/cavidade_Re100_N128/) | Cavidade, Re = 100 | 128 × 128 | ψ_min = −0,10337 (Ghia −0,10342, erro 0,05 %); 2048 iterações | convergiu | 6 min | — | [domínio](results/cavidade_Re100_N128/01_dominio.png) · [malha](results/cavidade_Re100_N128/02_malha.png) · [convergência](results/cavidade_Re100_N128/03_convergencia.png) · [resultados](results/cavidade_Re100_N128/04_resultados.png) |
+| [`cavidade_Re400_N128`](results/cavidade_Re400_N128/) | Cavidade, Re = 400 | 128 × 128 | ψ_min = −0,11343 (Ghia −0,11391, erro 0,42 %); 1583 iterações | convergiu | 4 min | — | [domínio](results/cavidade_Re400_N128/01_dominio.png) · [malha](results/cavidade_Re400_N128/02_malha.png) · [convergência](results/cavidade_Re400_N128/03_convergencia.png) · [resultados](results/cavidade_Re400_N128/04_resultados.png) |
+| [`cilindro_O_Re100_NT128_R10`](results/cilindro_O_Re100_NT128_R10/) | Cilindro, malha O, Re = 100, R_ext = 10 D | 88 × 128 (11.264 volumes) | Cd = 1,3744, Cl = ±0,3450, St = 0,1660 (12 ciclos) | concluído | 3 min | — | [domínio](results/cilindro_O_Re100_NT128_R10/01_dominio.png) · [malha](results/cilindro_O_Re100_NT128_R10/02_malha.png) · [convergência](results/cilindro_O_Re100_NT128_R10/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT128_R10/04_resultados.png) |
+| [`cilindro_O_Re100_NT128_R20`](results/cilindro_O_Re100_NT128_R20/) | Cilindro, malha O, Re = 100, R_ext = 20 D | 108 × 128 (13.824 volumes) | Cd = 1,3506, Cl = ±0,3269, St = 0,1646 (11 ciclos) | concluído | 4 min | — | [domínio](results/cilindro_O_Re100_NT128_R20/01_dominio.png) · [malha](results/cilindro_O_Re100_NT128_R20/02_malha.png) · [convergência](results/cilindro_O_Re100_NT128_R20/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT128_R20/04_resultados.png) |
+| [`cilindro_O_Re100_NT128_R40`](results/cilindro_O_Re100_NT128_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 128 × 128 (16.384 volumes) | Cd = 1,3385, Cl = ±0,3226, St = 0,1637 (11 ciclos) | concluído | 6 min | — | [domínio](results/cilindro_O_Re100_NT128_R40/01_dominio.png) · [malha](results/cilindro_O_Re100_NT128_R40/02_malha.png) · [convergência](results/cilindro_O_Re100_NT128_R40/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT128_R40/04_resultados.png) |
+| [`cilindro_O_Re100_NT128_R80`](results/cilindro_O_Re100_NT128_R80/) | Cilindro, malha O, Re = 100, R_ext = 80 D | 148 × 128 (18.944 volumes) | Cd = 1,3345, Cl = ±0,3206, St = 0,1634 (11 ciclos) | concluído | 5 min | — | [domínio](results/cilindro_O_Re100_NT128_R80/01_dominio.png) · [malha](results/cilindro_O_Re100_NT128_R80/02_malha.png) · [convergência](results/cilindro_O_Re100_NT128_R80/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT128_R80/04_resultados.png) |
+| [`cilindro_O_Re100_NT192_R40`](results/cilindro_O_Re100_NT192_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 192 × 192 (36.864 volumes) | Cd = 1,3353, Cl = ±0,3234, St = 0,1641 (11 ciclos) | concluído | 24 min | — | [domínio](results/cilindro_O_Re100_NT192_R40/01_dominio.png) · [malha](results/cilindro_O_Re100_NT192_R40/02_malha.png) · [convergência](results/cilindro_O_Re100_NT192_R40/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT192_R40/04_resultados.png) |
+| [`cilindro_O_Re100_NT256_R40`](results/cilindro_O_Re100_NT256_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 256 × 256 (65.536 volumes) | Cd = 1,3336, Cl = ±0,3234, St = 0,1643 (11 ciclos) | concluído | 63 min | — | [domínio](results/cilindro_O_Re100_NT256_R40/01_dominio.png) · [malha](results/cilindro_O_Re100_NT256_R40/02_malha.png) · [convergência](results/cilindro_O_Re100_NT256_R40/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT256_R40/04_resultados.png) |
+| [`cilindro_ret_Re100_G_h0.025`](results/cilindro_ret_Re100_G_h0.025/) | Cilindro, retangular G, Re = 100, [−40, 80] × [±40] D | 447 × 308, h = D/40 (137.676 volumes) | Cd = 1,3009, Cl = ±0,3106, St = 0,1657 (12 ciclos) | concluído | 76 min | — | [domínio](results/cilindro_ret_Re100_G_h0.025/01_dominio.png) · [malha](results/cilindro_ret_Re100_G_h0.025/02_malha.png) · [convergência](results/cilindro_ret_Re100_G_h0.025/03_convergencia.png) · [resultados](results/cilindro_ret_Re100_G_h0.025/04_resultados.png) |
+| [`cilindro_ret_Re100_M_h0.025`](results/cilindro_ret_Re100_M_h0.025/) | Cilindro, retangular M, Re = 100, [−20, 40] × [±20] D | 387 × 268, h = D/40 (103.716 volumes) | Cd = 1,3168, Cl = ±0,3167, St = 0,1671 (12 ciclos) | concluído | 55 min | — | [domínio](results/cilindro_ret_Re100_M_h0.025/01_dominio.png) · [malha](results/cilindro_ret_Re100_M_h0.025/02_malha.png) · [convergência](results/cilindro_ret_Re100_M_h0.025/03_convergencia.png) · [resultados](results/cilindro_ret_Re100_M_h0.025/04_resultados.png) |
+| [`cilindro_ret_Re100_M_h0.03333`](results/cilindro_ret_Re100_M_h0.03333/) | Cilindro, retangular M, Re = 100, [−20, 40] × [±20] D | 341 × 226, h = D/30 (77.066 volumes) | Cd = 1,2863, Cl = ±0,3020, St = 0,1679 (12 ciclos) | concluído | 29 min | — | [domínio](results/cilindro_ret_Re100_M_h0.03333/01_dominio.png) · [malha](results/cilindro_ret_Re100_M_h0.03333/02_malha.png) · [convergência](results/cilindro_ret_Re100_M_h0.03333/03_convergencia.png) · [resultados](results/cilindro_ret_Re100_M_h0.03333/04_resultados.png) |
+| [`cilindro_ret_Re100_P_h0.025`](results/cilindro_ret_Re100_P_h0.025/) | Cilindro, retangular P, Re = 100, [−10, 20] × [±10] D | 347 × 236, h = D/40 (81.892 volumes) | Cd = 1,3536, Cl = ±0,3257, St = 0,1706 (12 ciclos) | concluído | 41 min | — | [domínio](results/cilindro_ret_Re100_P_h0.025/01_dominio.png) · [malha](results/cilindro_ret_Re100_P_h0.025/02_malha.png) · [convergência](results/cilindro_ret_Re100_P_h0.025/03_convergencia.png) · [resultados](results/cilindro_ret_Re100_P_h0.025/04_resultados.png) |
+| [`paranoa_7d_h80`](results/paranoa_7d_h80/) | Lago Paranoá: poluente (escalar), 7 dias (ilustrativo) | 170 × 191, h = 80 m (5.947 no lago) | C/C0 média = 0,0056; sonda do braço do Riacho Fundo 0,0020; Q na barragem 8,50 m³/s; massa fecha a -4e-16 | concluído | 3 s | 2026-11-25 13:10 | [domínio](results/paranoa_7d_h80/01_dominio.png) · [malha](results/paranoa_7d_h80/02_malha.png) · [convergência](results/paranoa_7d_h80/03_convergencia.png) · [resultados](results/paranoa_7d_h80/04_resultados.png) |
+| [`tubo_Re100_n11`](results/tubo_Re100_n11/) | Tubo 3D, Re = 100 | 11 células no D (33.800 volumes) | f·Re = 63,16 (erro −1,32 %); L/D = 6,15 (Durst 5,77) | convergiu | 11 s | — | [domínio](results/tubo_Re100_n11/01_dominio.png) · [malha](results/tubo_Re100_n11/02_malha.png) · [convergência](results/tubo_Re100_n11/03_convergencia.png) · [resultados](results/tubo_Re100_n11/04_resultados.png) |
+| [`tubo_Re100_n15`](results/tubo_Re100_n15/) | Tubo 3D, Re = 100 | 15 células no D (57.800 volumes) | f·Re = 63,52 (erro −0,74 %); L/D = 5,97 (Durst 5,77) | convergiu | 25 s | — | [domínio](results/tubo_Re100_n15/01_dominio.png) · [malha](results/tubo_Re100_n15/02_malha.png) · [convergência](results/tubo_Re100_n15/03_convergencia.png) · [resultados](results/tubo_Re100_n15/04_resultados.png) |
+| [`tubo_Re100_n21`](results/tubo_Re100_n21/) | Tubo 3D, Re = 100 | 21 células no D (105.800 volumes) | f·Re = 63,80 (erro −0,32 %); L/D = 5,88 (Durst 5,77) | convergiu | 1 min | — | [domínio](results/tubo_Re100_n21/01_dominio.png) · [malha](results/tubo_Re100_n21/02_malha.png) · [convergência](results/tubo_Re100_n21/03_convergencia.png) · [resultados](results/tubo_Re100_n21/04_resultados.png) |
 <!-- casos:fim -->
 
 As figuras, métricas e logs de `results/` são versionados no git; os campos (`.npz`, ~70 MB)
@@ -394,6 +396,36 @@ Mesmo caso (Re = 100, mesmo esquema temporal), duas abordagens:
 
 <p align="center">
   <img src="docs/figures/cilindro_ret_G.png" width="900" alt="Cilindro em domínio retangular">
+</p>
+
+## Lago Paranoá — dispersão de um poluente (caso do Cordel, ilustrativo)
+
+`python/paranoa.py` resolve o caso `paranoa` do
+[Cordel](https://github.com/lucianonoleto79/cordel) (`casos/paranoa.py`) com volumes finitos:
+o mesmo contorno do OpenStreetMap (`python/dados/paranoa_contorno.json`, © OpenStreetMap
+contributors, ODbL), as mesmas vazões dos cinco afluentes (8,5 m³/s na barragem), H = 12 m,
+ν = κ = 0,1 m²/s e C/C0 = 1 na foz do Riacho Fundo. O lago é rasterizado numa malha cartesiana
+uniforme (células cujo centro está dentro do contorno, margem em escada); as entradas e a saída
+são velocidades normais prescritas nas faces de contorno junto às fozes e à barragem. Mesma
+família numérica dos outros solvers (malha desencontrada, AB2 + Crank–Nicolson, projeção
+incremental com Poisson fatorado uma vez); o escalar é explícito, com limitador TVD de van Leer.
+
+```bash
+python python/paranoa.py --dias 7                 # 1 semana, h = 80 m, Δt = 1800 s (~3 s)
+python python/paranoa.py --apenas-malha           # só domínio e malha
+```
+
+Em 7 dias (336 passos, 3 s): C/C0 média no lago 0,0056, 0,0020 na sonda do braço do Riacho
+Fundo, vazão na barragem 8,50 m³/s e massa do poluente conservada a 4×10⁻¹⁶. **Parâmetros
+ilustrativos, não calibrados** (sem vento, Coriolis, atrito, batimetria nem estratificação);
+não foi feito estudo de malha. A comparação com o Cordel e com o modelo de água rasa
+([paranoa_agua_rasa](https://github.com/lucianonoleto79/paranoa_agua_rasa)), com sugestões de
+tópicos para um trabalho de disciplina, está em
+[`results/estudo_comparacao_paranoa/`](results/estudo_comparacao_paranoa/) (cópia do relatório do
+Cordel, `resultados/comparacao_paranoa/`).
+
+<p align="center">
+  <img src="results/paranoa_7d_h80/04_resultados.png" width="900" alt="Poluente no Lago Paranoá (FVM, 7 dias)">
 </p>
 
 ## Limitações

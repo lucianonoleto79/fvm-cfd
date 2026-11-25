@@ -1,0 +1,31 @@
+{
+  "lago": "Paranoá",
+  "h": 80.0,
+  "dt": 1800.0,
+  "dias": 7.0,
+  "NX": 170,
+  "NY": 191,
+  "cells": 5947,
+  "faces_vel": 11146,
+  "iter": 336,
+  "nsub": 1,
+  "seconds": 3.1,
+  "seconds_montagem": 0.06,
+  "Q_saida": 8.5,
+  "C_media": 0.005595032988247068,
+  "entrada_adv": 117187.5,
+  "entrada_dif": 95763.93155907409,
+  "saida": 3.007536669553403e-212,
+  "balanco_rel": -4.1000659507649446e-16,
+  "balanco_adv_rel": 0.8171855493040981,
+  "C_min": 0.0,
+  "C_max": 0.9728863271807601,
+  "sondas": {
+    "Braço do Riacho Fundo": 0.0019546950543533094,
+    "Braço Sul": 1.8293572263143026e-64,
+    "Corpo central": 8.948872153010853e-122,
+    "Braço Norte": 8.609050162471284e-258,
+    "Barragem": 5.928114918179563e-187
+  },
+  "data": "2026-11-25 13:10"
+}
