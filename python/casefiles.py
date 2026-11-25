@@ -112,7 +112,7 @@ def describe_case(name, r):
     """(tipo, malha, métricas principais, situação) de um caso a partir de resultados.json."""
     if r.get('interrompido'):
         status = 'interrompido (parcial)'
-    elif 'Cd_mean' in r:
+    elif 'Cd_mean' in r or 'lago' in r:
         status = 'concluído'
     else:
         status = 'convergiu' if r.get('converged') else 'não convergiu'
@@ -137,6 +137,12 @@ def describe_case(name, r):
             malha = f"{r['NX']} × {r['NY']}, h = D/{1 / r['h']:.0f} ({_int(r['cells'])} volumes)"
         met = (f"Cd = {_fmt(r['Cd_mean'])}, Cl = ±{_fmt(r['Cl_amp'])}, St = {_fmt(r.get('St'))} "
                f"({r.get('ciclos', 0)} ciclos)")
+    elif 'lago' in r:                                          # lago com escalar (paranoa.py)
+        tipo = f"Lago {r['lago']}: poluente (escalar), {r['dias']:g} dias (ilustrativo)"
+        malha = f"{r['NX']} × {r['NY']}, h = {r['h']:g} m ({_int(r['cells'])} no lago)"
+        rf = r['sondas'].get('Braço do Riacho Fundo')
+        met = (f"C/C0 média = {_fmt(r['C_media'], 4)}; sonda do braço do Riacho Fundo {_fmt(rf, 4)}; "
+               f"Q na barragem {_fmt(r['Q_saida'], 2)} m³/s; massa fecha a {r['balanco_rel']:.0e}")
     else:
         tipo, malha, met = name, '—', '—'
     return tipo, malha, met, status
