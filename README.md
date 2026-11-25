@@ -419,8 +419,10 @@ Em 7 dias (336 passos, 3 s): C/C0 média no lago 0,0056, 0,0020 na sonda do bra�
 Fundo, vazão na barragem 8,50 m³/s e massa do poluente conservada a 4×10⁻¹⁶. **Parâmetros
 ilustrativos, não calibrados** (sem vento, Coriolis, atrito, batimetria nem estratificação);
 não foi feito estudo de malha. A comparação com o Cordel e com o modelo de água rasa
-([paranoa_agua_rasa](https://github.com/lucianonoleto79/paranoa_agua_rasa)) está no Cordel, em
-`resultados/comparacao_paranoa/`.
+([paranoa_agua_rasa](https://github.com/lucianonoleto79/paranoa_agua_rasa)), com sugestões de
+tópicos para um trabalho de disciplina, está em
+[`results/estudo_comparacao_paranoa/`](results/estudo_comparacao_paranoa/) (cópia do relatório do
+Cordel, `resultados/comparacao_paranoa/`).
 
 <p align="center">
   <img src="results/paranoa_7d_h80/04_resultados.png" width="900" alt="Poluente no Lago Paranoá (FVM, 7 dias)">
