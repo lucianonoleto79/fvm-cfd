@@ -73,7 +73,7 @@ Tabela mantida automaticamente: cada script, ao terminar (ou interromper) um cas
 `results/estudo_*`.
 
 <!-- casos:inicio (tabela gerada por python/casefiles.py; não edite à mão) -->
-_17 casos em `results/`, atualizado em 2026-11-25 13:14._
+_18 casos em `results/`, atualizado em 2026-11-25 18:03._
 
 | caso | tipo | malha | resultados principais | situação | tempo | data | figuras |
 |---|---|---|---|---|---:|---|---|
@@ -90,6 +90,7 @@ _17 casos em `results/`, atualizado em 2026-11-25 13:14._
 | [`cilindro_ret_Re100_M_h0.025`](results/cilindro_ret_Re100_M_h0.025/) | Cilindro, retangular M, Re = 100, [−20, 40] × [±20] D | 387 × 268, h = D/40 (103.716 volumes) | Cd = 1,3168, Cl = ±0,3167, St = 0,1671 (12 ciclos) | concluído | 55 min | — | [domínio](results/cilindro_ret_Re100_M_h0.025/01_dominio.png) · [malha](results/cilindro_ret_Re100_M_h0.025/02_malha.png) · [convergência](results/cilindro_ret_Re100_M_h0.025/03_convergencia.png) · [resultados](results/cilindro_ret_Re100_M_h0.025/04_resultados.png) |
 | [`cilindro_ret_Re100_M_h0.03333`](results/cilindro_ret_Re100_M_h0.03333/) | Cilindro, retangular M, Re = 100, [−20, 40] × [±20] D | 341 × 226, h = D/30 (77.066 volumes) | Cd = 1,2863, Cl = ±0,3020, St = 0,1679 (12 ciclos) | concluído | 29 min | — | [domínio](results/cilindro_ret_Re100_M_h0.03333/01_dominio.png) · [malha](results/cilindro_ret_Re100_M_h0.03333/02_malha.png) · [convergência](results/cilindro_ret_Re100_M_h0.03333/03_convergencia.png) · [resultados](results/cilindro_ret_Re100_M_h0.03333/04_resultados.png) |
 | [`cilindro_ret_Re100_P_h0.025`](results/cilindro_ret_Re100_P_h0.025/) | Cilindro, retangular P, Re = 100, [−10, 20] × [±10] D | 347 × 236, h = D/40 (81.892 volumes) | Cd = 1,3536, Cl = ±0,3257, St = 0,1706 (12 ciclos) | concluído | 41 min | — | [domínio](results/cilindro_ret_Re100_P_h0.025/01_dominio.png) · [malha](results/cilindro_ret_Re100_P_h0.025/02_malha.png) · [convergência](results/cilindro_ret_Re100_P_h0.025/03_convergencia.png) · [resultados](results/cilindro_ret_Re100_P_h0.025/04_resultados.png) |
+| [`paranoa_365d_h80`](results/paranoa_365d_h80/) | Lago Paranoá: poluente (escalar), 365 dias (ilustrativo) | 170 × 191, h = 80 m (5.947 no lago) | C/C0 média = 0,1758; sonda do braço do Riacho Fundo 1,0000; Q na barragem 8,50 m³/s; massa fecha a -2e-16 | concluído | 3 min | 2026-11-25 18:03 | [domínio](results/paranoa_365d_h80/01_dominio.png) · [malha](results/paranoa_365d_h80/02_malha.png) · [convergência](results/paranoa_365d_h80/03_convergencia.png) · [resultados](results/paranoa_365d_h80/04_resultados.png) |
 | [`paranoa_7d_h80`](results/paranoa_7d_h80/) | Lago Paranoá: poluente (escalar), 7 dias (ilustrativo) | 170 × 191, h = 80 m (5.947 no lago) | C/C0 média = 0,0056; sonda do braço do Riacho Fundo 0,0020; Q na barragem 8,50 m³/s; massa fecha a -4e-16 | concluído | 3 s | 2026-11-25 13:10 | [domínio](results/paranoa_7d_h80/01_dominio.png) · [malha](results/paranoa_7d_h80/02_malha.png) · [convergência](results/paranoa_7d_h80/03_convergencia.png) · [resultados](results/paranoa_7d_h80/04_resultados.png) |
 | [`tubo_Re100_n11`](results/tubo_Re100_n11/) | Tubo 3D, Re = 100 | 11 células no D (33.800 volumes) | f·Re = 63,16 (erro −1,32 %); L/D = 6,15 (Durst 5,77) | convergiu | 11 s | — | [domínio](results/tubo_Re100_n11/01_dominio.png) · [malha](results/tubo_Re100_n11/02_malha.png) · [convergência](results/tubo_Re100_n11/03_convergencia.png) · [resultados](results/tubo_Re100_n11/04_resultados.png) |
 | [`tubo_Re100_n15`](results/tubo_Re100_n15/) | Tubo 3D, Re = 100 | 15 células no D (57.800 volumes) | f·Re = 63,52 (erro −0,74 %); L/D = 5,97 (Durst 5,77) | convergiu | 25 s | — | [domínio](results/tubo_Re100_n15/01_dominio.png) · [malha](results/tubo_Re100_n15/02_malha.png) · [convergência](results/tubo_Re100_n15/03_convergencia.png) · [resultados](results/tubo_Re100_n15/04_resultados.png) |
@@ -418,7 +419,14 @@ python python/paranoa.py --apenas-malha           # só domínio e malha
 Em 7 dias (336 passos, 3 s): C/C0 média no lago 0,0056, 0,0020 na sonda do braço do Riacho
 Fundo, vazão na barragem 8,50 m³/s e massa do poluente conservada a 4×10⁻¹⁶. **Parâmetros
 ilustrativos, não calibrados** (sem vento, Coriolis, atrito, batimetria nem estratificação);
-não foi feito estudo de malha. A comparação com o Cordel e com o modelo de água rasa
+não foi feito estudo de malha.
+Em 365 dias (`--dias 365`; 17 520 passos, 2 min 52 s): C/C0 = 1,0 no braço do Riacho Fundo,
+0,220 no Braço Sul, 0,128 no corpo central, 0,024 na barragem e 0 no Braço Norte, praticamente
+iguais aos do Cordel; massa conservada a 2×10⁻¹⁶ (pasta [`results/paranoa_365d_h80/`](results/paranoa_365d_h80/)).
+A comparação de 1 ano com o Cordel e a água rasa está em
+[`results/estudo_comparacao_paranoa_365d/`](results/estudo_comparacao_paranoa_365d/), e o enunciado do
+trabalho de disciplina, em `trabalho/enunciado.pdf` do
+[Cordel](https://github.com/lucianonoleto79/cordel/blob/main/trabalho/enunciado.pdf). A comparação com o Cordel e com o modelo de água rasa
 ([paranoa_agua_rasa](https://github.com/lucianonoleto79/paranoa_agua_rasa)), com sugestões de
 tópicos para um trabalho de disciplina, está em
 [`results/estudo_comparacao_paranoa/`](results/estudo_comparacao_paranoa/) (cópia do relatório do
