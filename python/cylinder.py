@@ -47,6 +47,23 @@ def pulse(t, amp=0.5, T=2.0):
     return amp * np.sin(np.pi * t / T) if t < T else 0.0
 
 
+def wall_cp_summary(theta, cp):
+    """Cp de estagnação (theta = 180°), mínimo e seu ângulo (a partir da estagnação),
+    de base (theta = 0) e arrasto de pressão Cd_p = -1/2 ∫ Cp cos(theta) dtheta."""
+    ang = np.degrees(np.abs(np.pi - theta))
+    dth = 2 * np.pi / len(theta)
+    return dict(Cp_estag=float(cp[np.argmin(ang)]), Cp_min=float(cp.min()),
+                ang_Cp_min=float(ang[np.argmin(cp)]), Cp_base=float(cp[np.argmax(ang)]),
+                Cd_pressao=float(-0.5 * (cp * np.cos(theta)).sum() * dth))
+
+
+def save_wall_cp(fname, theta, cp):
+    """theta (rad, de +x), ângulo a partir da estagnação (graus) e Cp médio, em CSV."""
+    ang = np.degrees(np.abs(np.pi - theta))
+    np.savetxt(fname, np.c_[theta, ang, cp], delimiter=',', fmt='%.6f',
+               header='theta_rad_de_+x,angulo_da_estagnacao_graus,cp_medio', comments='')
+
+
 # ------------------------------------------------------------------- figuras
 def _lines(ax, g, every_r=1, every_t=1, rmax=None, **kw):
     from matplotlib.collections import LineCollection
@@ -281,8 +298,9 @@ def main():
         s = PolarNS(g, Re=args.Re, cfl=args.cfl, wall_speed=pulse)
         n_steps = int(round(args.T / s.dt))
         print(f'  dt = {s.dt:.5f}, {n_steps} passos até t = {args.T:g}', flush=True)
-        maybe_resume(args, s, case.parcial)
         t_from = args.stats_from if args.stats_from is not None else args.T / 2
+        s.pw_from = t_from                           # Cp médio na parede na mesma janela das médias
+        maybe_resume(args, s, case.parcial)
         mon = ConvergenceMonitor(['Cd', 'Cl'], report=args.report,
                                  plot_file=None if args.no_curve else case.convergencia,
                                  live=args.live, refresh=args.refresh, logy=False,
@@ -299,6 +317,10 @@ def main():
                    steps=s.iter, cfl=s.cfl(), div_max=float(np.abs(s.divergence()).max()),
                    dr_wall=float(g.drp[0]), seconds=round(getattr(s, 'seconds_total', 0.0), 1),
                    interrompido=bool(getattr(s, 'stopped', False)))
+        cpm = s.wall_cp_mean()
+        if cpm is not None:
+            res.update(wall_cp_summary(*cpm), cp_t_from=float(t_from), cp_amostras=int(s.pw_n))
+            save_wall_cp(case.root / 'cp_parede.csv', *cpm)
         results.append(res)
         plot_case(s, res, case.resultado())
         case.save_json(res)

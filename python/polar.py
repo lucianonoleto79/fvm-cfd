@@ -124,6 +124,11 @@ class PolarNS:
         self.history = []                            # (iter, Cd, Cl)
         self.converged = False
         self.prev = None                             # termos explícitos do passo anterior (AB2)
+        # média temporal da pressão na parede (Cp médio), acumulada para t >= pw_from
+        self.pw_from = np.inf
+        self.pw_sum = np.zeros(NT)
+        self.pw_n = 0
+        self.j_upstream = int(np.argmin(np.abs(g.thc - np.pi)))
         if outer == 'freestream':
             self.potential_flow()
         else:
@@ -304,7 +309,19 @@ class PolarNS:
         self.iter += 1
         cd, cl = self.forces()
         self.history.append((self.iter, cd, cl))
+        if self.t >= self.pw_from - 1e-12:
+            # p só é definida a menos de uma constante (projeção incremental): referência
+            # p_inf = p na última célula a montante (theta = pi, r = R_ext; erro ~ (R0/R_ext)^2)
+            self.pw_sum += self.wall_pressure() - self.p[-1, self.j_upstream]
+            self.pw_n += 1
         return cd, cl
+
+    def wall_cp_mean(self):
+        """(theta, Cp médio na parede) com theta = g.thc medido de +x; None sem amostras.
+        Referência de pressão: p no contorno externo a montante (p_inf)."""
+        if not self.pw_n:
+            return None
+        return self.g.thc, 2 * self.pw_sum / self.pw_n / self.Uinf ** 2
 
     def run(self, n_steps, report=200, monitor=None, control=None):
         if monitor is None:
@@ -353,7 +370,8 @@ class PolarNS:
     # ------------------------------------------------------- checkpoints
     def get_state(self):
         st = {'ur': self.ur, 'ut': self.ut, 'p': self.p, 'ut_b': self.ut_b,
-              't': np.array(self.t), 'dt': np.array(self.dt)}
+              't': np.array(self.t), 'dt': np.array(self.dt),
+              'pw_from': np.array(self.pw_from), 'pw_sum': self.pw_sum, 'pw_n': np.array(self.pw_n)}
         if self.prev is not None:
             st['prev_r'], st['prev_t'] = self.prev
         return st
@@ -368,3 +386,5 @@ class PolarNS:
         self.ut_b = np.array(st['ut_b'], dtype=float)
         self.t = float(st['t'])
         self.prev = (np.array(st['prev_r']), np.array(st['prev_t'])) if 'prev_r' in st else None
+        if 'pw_sum' in st and float(st['pw_from']) == self.pw_from:   # mesma janela de média
+            self.pw_sum, self.pw_n = np.array(st['pw_sum'], dtype=float), int(st['pw_n'])
