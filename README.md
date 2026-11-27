@@ -12,6 +12,7 @@ validados contra a literatura:
 | 2D — Python (`python/cavity.py`) e JavaScript (`web/`) | Cavidade com tampa deslizante, Re = 100, 400, 1000 | Ghia, Ghia & Shin (1982) |
 | 3D — Python (`python/fvm3d.py`) com fronteira imersa | Tubo circular, Re = 100: entrada e escoamento plenamente desenvolvido | Hagen–Poiseuille; Durst et al. (2005) |
 | 2D transiente — Python (`python/polar.py`), malha O | Cilindro circular, Re = 100: esteira de von Kármán (Cd, Cl, Strouhal) | Braza et al. (1986); Liu et al. (1998); Park et al. (1998); Williamson (1988) |
+| 2D transiente — Python (`python/cylinder2d.py`), malha uniforme + fronteira imersa de fração volumétrica | Cilindro circular, Re = 100 e Re = 40 (Cd, Cl, St, Cp na parede, bolha de recirculação) | Williamson (1996); Henderson (1995); Park et al. (1998) |
 
 <p align="center">
   <img src="docs/figures/tubo_Re100.png" width="900" alt="Validação 3D em tubo circular">
@@ -33,6 +34,7 @@ fvm-cfd/
 │   ├── cylinder_rect.py cilindro em domínio retangular (tamanhos P, M, G)
 │   ├── compare_domains.py  efeito do tamanho do domínio: malha O x retangular
 │   ├── pipe.py          validação 3D: tubo circular
+│   ├── cylinder2d.py    cilindro em malha uniforme: projeção + fronteira imersa de fração volumétrica
 │   └── paranoa.py       Lago Paranoá: poluente (escalar) — o caso `paranoa` do Cordel em VF
 ├── web/                 versão JavaScript (roda no navegador / GitHub Pages)
 │   ├── index.html  fvm.js  ghia.js
@@ -73,16 +75,20 @@ Tabela mantida automaticamente: cada script, ao terminar (ou interromper) um cas
 `results/estudo_*`.
 
 <!-- casos:inicio (tabela gerada por python/casefiles.py; não edite à mão) -->
-_18 casos em `results/`, atualizado em 2026-11-25 18:03._
+_22 casos em `results/`, atualizado em 2026-11-27 17:28._
 
 | caso | tipo | malha | resultados principais | situação | tempo | data | figuras |
 |---|---|---|---|---|---:|---|---|
 | [`cavidade_Re1000_N128`](results/cavidade_Re1000_N128/) | Cavidade, Re = 1000 | 128 × 128 | ψ_min = −0,11727 (Ghia −0,11793, erro 0,56 %); 1570 iterações | convergiu | 4 min | — | [domínio](results/cavidade_Re1000_N128/01_dominio.png) · [malha](results/cavidade_Re1000_N128/02_malha.png) · [convergência](results/cavidade_Re1000_N128/03_convergencia.png) · [resultados](results/cavidade_Re1000_N128/04_resultados.png) |
 | [`cavidade_Re100_N128`](results/cavidade_Re100_N128/) | Cavidade, Re = 100 | 128 × 128 | ψ_min = −0,10337 (Ghia −0,10342, erro 0,05 %); 2048 iterações | convergiu | 6 min | — | [domínio](results/cavidade_Re100_N128/01_dominio.png) · [malha](results/cavidade_Re100_N128/02_malha.png) · [convergência](results/cavidade_Re100_N128/03_convergencia.png) · [resultados](results/cavidade_Re100_N128/04_resultados.png) |
 | [`cavidade_Re400_N128`](results/cavidade_Re400_N128/) | Cavidade, Re = 400 | 128 × 128 | ψ_min = −0,11343 (Ghia −0,11391, erro 0,42 %); 1583 iterações | convergiu | 4 min | — | [domínio](results/cavidade_Re400_N128/01_dominio.png) · [malha](results/cavidade_Re400_N128/02_malha.png) · [convergência](results/cavidade_Re400_N128/03_convergencia.png) · [resultados](results/cavidade_Re400_N128/04_resultados.png) |
+| [`cilindro_mac_Re100_h0.04`](results/cilindro_mac_Re100_h0.04/) | Cilindro, malha uniforme + fronteira imersa, Re = 100, [-6, 16] × [-7, 7] D | 550 × 350, h = D/25 (192.500 volumes) | Cd = 1,4507, Cl' RMS = 0,2584, St = 0,1749, Lw/D = 1,63 | concluído | 1,8 h | 2026-11-27 17:12 | [resultados](results/cilindro_mac_Re100_h0.04/04_resultados.png) |
+| [`cilindro_mac_Re100_h0.05`](results/cilindro_mac_Re100_h0.05/) | Cilindro, malha uniforme + fronteira imersa, Re = 100, [-6, 16] × [-7, 7] D | 440 × 280, h = D/20 (123.200 volumes) | Cd = 1,3982, Cl' RMS = 0,2221, St = 0,1762, Lw/D = 1,25 | concluído | 32 min | 2026-11-27 17:12 | [resultados](results/cilindro_mac_Re100_h0.05/04_resultados.png) |
+| [`cilindro_mac_Re100_h0.08`](results/cilindro_mac_Re100_h0.08/) | Cilindro, malha uniforme + fronteira imersa, Re = 100, [-6, 16] × [-7, 7] D | 275 × 175, h = D/12.5 (48.125 volumes) | Cd = 1,4557, Cl' RMS = 0,2441, St = 0,1725, Lw/D = 1,72 | concluído | 5 min | 2026-11-27 17:12 | [resultados](results/cilindro_mac_Re100_h0.08/04_resultados.png) |
+| [`cilindro_mac_Re40_h0.04`](results/cilindro_mac_Re40_h0.04/) | Cilindro, malha uniforme + fronteira imersa, Re = 40, [-6, 16] × [-7, 7] D | 550 × 350, h = D/25 (192.500 volumes) | Cd = 1,6949, Cl' RMS = 0,0003, St = —, Lw/D = 2,24 | concluído | 81 min | 2026-11-27 17:12 | [resultados](results/cilindro_mac_Re40_h0.04/04_resultados.png) |
 | [`cilindro_O_Re100_NT128_R10`](results/cilindro_O_Re100_NT128_R10/) | Cilindro, malha O, Re = 100, R_ext = 10 D | 88 × 128 (11.264 volumes) | Cd = 1,3744, Cl = ±0,3450, St = 0,1660 (12 ciclos) | concluído | 3 min | — | [domínio](results/cilindro_O_Re100_NT128_R10/01_dominio.png) · [malha](results/cilindro_O_Re100_NT128_R10/02_malha.png) · [convergência](results/cilindro_O_Re100_NT128_R10/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT128_R10/04_resultados.png) |
 | [`cilindro_O_Re100_NT128_R20`](results/cilindro_O_Re100_NT128_R20/) | Cilindro, malha O, Re = 100, R_ext = 20 D | 108 × 128 (13.824 volumes) | Cd = 1,3506, Cl = ±0,3269, St = 0,1646 (11 ciclos) | concluído | 4 min | — | [domínio](results/cilindro_O_Re100_NT128_R20/01_dominio.png) · [malha](results/cilindro_O_Re100_NT128_R20/02_malha.png) · [convergência](results/cilindro_O_Re100_NT128_R20/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT128_R20/04_resultados.png) |
-| [`cilindro_O_Re100_NT128_R40`](results/cilindro_O_Re100_NT128_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 128 × 128 (16.384 volumes) | Cd = 1,3385, Cl = ±0,3226, St = 0,1637 (11 ciclos) | concluído | 6 min | — | [domínio](results/cilindro_O_Re100_NT128_R40/01_dominio.png) · [malha](results/cilindro_O_Re100_NT128_R40/02_malha.png) · [convergência](results/cilindro_O_Re100_NT128_R40/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT128_R40/04_resultados.png) |
+| [`cilindro_O_Re100_NT128_R40`](results/cilindro_O_Re100_NT128_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 128 × 128 (16.384 volumes) | Cd = 1,3385, Cl = ±0,3226, St = 0,1637 (11 ciclos) | concluído | 17 min | 2026-11-27 17:28 | [domínio](results/cilindro_O_Re100_NT128_R40/01_dominio.png) · [malha](results/cilindro_O_Re100_NT128_R40/02_malha.png) · [convergência](results/cilindro_O_Re100_NT128_R40/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT128_R40/04_resultados.png) |
 | [`cilindro_O_Re100_NT128_R80`](results/cilindro_O_Re100_NT128_R80/) | Cilindro, malha O, Re = 100, R_ext = 80 D | 148 × 128 (18.944 volumes) | Cd = 1,3345, Cl = ±0,3206, St = 0,1634 (11 ciclos) | concluído | 5 min | — | [domínio](results/cilindro_O_Re100_NT128_R80/01_dominio.png) · [malha](results/cilindro_O_Re100_NT128_R80/02_malha.png) · [convergência](results/cilindro_O_Re100_NT128_R80/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT128_R80/04_resultados.png) |
 | [`cilindro_O_Re100_NT192_R40`](results/cilindro_O_Re100_NT192_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 192 × 192 (36.864 volumes) | Cd = 1,3353, Cl = ±0,3234, St = 0,1641 (11 ciclos) | concluído | 24 min | — | [domínio](results/cilindro_O_Re100_NT192_R40/01_dominio.png) · [malha](results/cilindro_O_Re100_NT192_R40/02_malha.png) · [convergência](results/cilindro_O_Re100_NT192_R40/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT192_R40/04_resultados.png) |
 | [`cilindro_O_Re100_NT256_R40`](results/cilindro_O_Re100_NT256_R40/) | Cilindro, malha O, Re = 100, R_ext = 40 D | 256 × 256 (65.536 volumes) | Cd = 1,3336, Cl = ±0,3234, St = 0,1643 (11 ciclos) | concluído | 63 min | — | [domínio](results/cilindro_O_Re100_NT256_R40/01_dominio.png) · [malha](results/cilindro_O_Re100_NT256_R40/02_malha.png) · [convergência](results/cilindro_O_Re100_NT256_R40/03_convergencia.png) · [resultados](results/cilindro_O_Re100_NT256_R40/04_resultados.png) |
@@ -135,6 +141,9 @@ python python/pipe.py --n 11 15 21 31      # tubo: estudo de malha
 python python/pipe.py --n 31 --reanalyze   # refaz análise/figura a partir dos .npz
 python python/cylinder.py --mesh-only      # cilindro: só gera a figura da malha
 python python/cylinder.py --NT 128         # cilindro Re = 100, malha 128 x 128 (~6 min)
+python python/cylinder2d.py                # cilindro em malha uniforme, h = D/25, t = 200 (~1-2 h)
+python python/cylinder2d.py --Re 100 --h 0.08 0.05   # estudo de malha (malha uniforme)
+python python/cylinder2d.py --Re 40 --tmax 100       # esteira estacionária
 ```
 
 ### Monitor de convergência
@@ -337,6 +346,10 @@ Verificado antes contra a solução exata de Taylor–Couette (erro de 2ª ordem
   ≈ 1,326, pouco confiável) — o cálculo de forças na parede (pressão extrapolada, tensão
   por parábola de 3 pontos) e o dt, que muda com a malha, provavelmente limitam a ordem.
 * Não foi feito estudo do tamanho do domínio (R_ext = 40 D fixo), que também afeta Cd.
+* **Cp médio na parede** (média em t ≥ 75, referência p∞ = pressão no contorno externo a
+  montante; gravado em `cp_parede.csv` na pasta do caso), malha 128 × 128: Cp = 1,061 na
+  estagnação, mínimo −1,129 a 83° da estagnação, −0,704 na base; o arrasto de pressão
+  (integral de Cp) é 0,987, ou 74 % do Cd médio.
 
 <p align="center">
   <img src="docs/figures/cilindro_Re100_NT256.png" width="900" alt="Cilindro Re = 100: forças e vorticidade">
@@ -399,6 +412,50 @@ Mesmo caso (Re = 100, mesmo esquema temporal), duas abordagens:
   <img src="docs/figures/cilindro_ret_G.png" width="900" alt="Cilindro em domínio retangular">
 </p>
 
+## Cilindro em malha uniforme com fronteira imersa de fração volumétrica
+
+`python/cylinder2d.py` é uma terceira abordagem do mesmo problema, mais simples e pensada
+para ensino (usada no trabalho de disciplina do
+[panel_method](https://github.com/lucianonoleto79/panel_method), pasta `trabalho_cilindro/`,
+junto com o Cordel e o método dos painéis):
+
+* **passo fracionado** (projeção incremental) em malha MAC **uniforme**; convecção QUICK
+  (ou central) e difusão explícitas com **Adams–Bashforth 2**;
+* Δt = min(0,4 h/1,6; 0,1 h²/ν): CFL e limite de estabilidade da difusão explícita com AB2
+  em 2D (ν Δt/h² ≤ 1/8);
+* Poisson resolvido exatamente: **DCT-II em y** + sistema tridiagonal em x por modo;
+* cilindro por **fronteira imersa de fração volumétrica** (Kajishima et al., 2001):
+  u ← (1 − α) u, com α a fração sólida do volume de cada componente; a força sobre o corpo é
+  a soma do forçamento;
+* domínio [−6, 16] × [−7, 7] D (bloqueio D/H = 7 %): entrada u = 1, laterais com
+  deslizamento livre, saída convectiva; perturbação inicial assimétrica (a mesma do Cordel);
+* médias em t ≥ tmax/2; St pela FFT de Cl, **não definido** (—) se a amplitude de Cl for
+  menor que 0,02 (esteira estacionária); Cp médio na parede em `cp_parede.csv`.
+
+**Re = 100, t = 200 — estudo de malha** ([`results/estudo_cilindro_mac_Re100/`](results/estudo_cilindro_mac_Re100/)):
+
+| h | volumes | Cd médio | Cl′ RMS | St | Lw/D | Cp estag. | Cp mín. (ângulo) | tempo |
+|---|--------:|---------:|--------:|---:|-----:|----------:|-----------------:|------:|
+| D/12,5 |  48 125 | 1,456 | 0,244 | 0,1725 | 1,72 | 1,203 | −1,300 (76°) | 5 min |
+| D/20   | 123 200 | 1,398 | 0,222 | 0,1762 | 1,25 | 1,178 | −1,287 (76°) | 32 min |
+| D/25   | 192 500 | 1,451 | 0,258 | 0,1749 | 1,63 | 1,218 | −1,226 (84°) | 1,8 h |
+| malha O, 256 × 256 (acima) | 65 536 | 1,334 | 0,23 | 0,1643 | | | | |
+
+Ângulos a partir do ponto de estagnação.
+
+* St é estável na malha (0,175 ± 0,002); Cd, Cl′ e Lw **não convergem monotonicamente**: a
+  fronteira imersa representa o círculo por frações de célula, e cada malha "vê" um contorno
+  em escada ligeiramente diferente.
+* Cd e St ficam 7–9 % acima da malha O: bloqueio de 7 % (no domínio retangular acima, 5 % de
+  bloqueio já sobe St para 0,171) somado à camada limite pouco resolvida em malha uniforme.
+
+**Re = 40, h = D/25, t = 100** (esteira estacionária): Cd = 1,695, Cl′ ≈ 3·10⁻⁴ (St não
+definido), **Lw/D = 2,24** (literatura: 2,2–2,3; Cd = 1,5–1,6).
+
+<p align="center">
+  <img src="results/cilindro_mac_Re100_h0.04/04_resultados.png" width="800" alt="Cilindro em malha uniforme, Re = 100">
+</p>
+
 ## Lago Paranoá — dispersão de um poluente (caso do Cordel, ilustrativo)
 
 `python/paranoa.py` resolve o caso `paranoa` do
@@ -443,5 +500,8 @@ Cordel, `resultados/comparacao_paranoa/`).
   da malha O); estudo de refinamento só com dois níveis (D/30, D/40).
 * Cilindro: malha O específica para corpo circular; a malha engrossa longe do corpo, o que
   difunde os vórtices da esteira (x > 10 D) sem afetar as forças no cilindro.
+* Malha uniforme (`cylinder2d.py`): o refino junto à parede custa no domínio todo; a
+  fronteira imersa de fração volumétrica é de 1ª ordem na parede (Cd ~8 % acima da malha O
+  em D/25); a difusão explícita limita Δt em Re baixo.
 * No 3D, saída apenas na face z+; validado só no tubo circular.
 * A versão JavaScript resolve apenas a cavidade 2D.

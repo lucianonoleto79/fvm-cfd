@@ -127,6 +127,13 @@ def describe_case(name, r):
         malha = f"{r['n']} células no D ({_int(r['cells'])} volumes)"
         met = (f"f·Re = {_fmt(r['fRe'], 2)} (erro {_fmt(r['fRe_err_pct'], 2)} %); "
                f"L/D = {_fmt(r['Le'], 2)} (Durst {_fmt(r['Le_durst'], 2)})")
+    elif r.get('solver') == 'cylinder2d':                      # cilindro, malha uniforme (cylinder2d.py)
+        x0, x1, y0, y1 = r['domain']
+        tipo = (f"Cilindro, malha uniforme + fronteira imersa, Re = {r['Re']:g}, "
+                f"[{x0:g}, {x1:g}] × [{y0:g}, {y1:g}] D")
+        malha = f"{r['nx']} × {r['ny']}, h = D/{r['D_over_h']:g} ({_int(r['cells'])} volumes)"
+        met = (f"Cd = {_fmt(r['Cd_mean'])}, Cl' RMS = {_fmt(r['Cl_rms'])}, St = {_fmt(r.get('St'))}, "
+               f"Lw/D = {_fmt(r['Lw'], 2)}")
     elif 'Cd_mean' in r:                                       # cilindro
         if 'NT' in r:
             tipo = f"Cilindro, malha O, Re = {r['Re']:g}, R_ext = {r['Rext']:g} D"
